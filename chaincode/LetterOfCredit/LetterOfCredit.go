@@ -144,6 +144,18 @@ type ApplicationForm struct {
 	Currency string
 	//金额
 	Amount float64 `json:"amount,string,omitempty"`
+	//保证金金额
+	EnsureAmount float64 `json:"EnsureAmount,string,omitempty"`
+	//是否可议付
+	Negotiate int `json:"Negotiate,string,omitempty"`
+	//是否可转让
+	Transfer int `json:"Transfer,string,omitempty"`
+	//是否可保兑
+	Confirmed int `json:"Confirmed,string,omitempty"`
+	//短装
+	Lowfill float64 `json:"Lowfill,string,omitempty"`
+	//溢装
+	Overfill float64 `json:"Overfill,string,omitempty"`
 	//申请时间
 	ApplyTime time.Time `json:"applyTime,string,omitempty"`
 	//在开证行产生的费用由谁承担：1买方、2卖方
@@ -195,6 +207,18 @@ type LetterOfCredit struct {
 	Currency string
 	//金额
 	Amount float64 `json:"amount,string,omitempty"`
+	//保证金金额
+	EnsureAmount float64 `json:"EnsureAmount,string,omitempty"`
+	//是否可议付
+	Negotiate int `json:"Negotiate,string,omitempty"`
+	//是否可转让
+	Transfer int `json:"Transfer,string,omitempty"`
+	//是否可保兑
+	Confirmed int `json:"Confirmed,string,omitempty"`
+	//短装
+	Lowfill float64 `json:"Lowfill,string,omitempty"`
+	//溢装
+	Overfill float64 `json:"Overfill,string,omitempty"`
 	//申请时间
 	ApplyTime time.Time `json:"applyTime,string,omitempty"`
 	//在开证行产生的费用由谁承担：1买方、2卖方
