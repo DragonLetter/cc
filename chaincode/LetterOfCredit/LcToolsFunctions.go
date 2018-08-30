@@ -167,6 +167,15 @@ func decodeAmendForm(jsonStr string) (AmendForm,error){
 	}
 	return amendForm,nil
 }
+func decodeBCSData(jsonStr string) (DataOfBCS,error){
+	var data DataOfBCS
+	err:=json.Unmarshal([]byte (jsonStr),&data)
+	if err != nil {
+		jsonResp := "{\"Error\":\"Failed to decode JSON of: " + jsonStr+ "\" to DataOfBCS}"
+		return DataOfBCS{},errors.New(jsonResp)
+	}
+	return data,nil
+}
 
 // MIN 为用户自定义的比较精度
 func isEqual(f1, f2 float64) bool {

@@ -99,6 +99,14 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.reviewRetireBills(stub, args)
 	} else if function == "lcClose" {
 		return t.lcClose(stub, args)
+	} else if function == "saveBCSInfo" {
+		return t.saveBCSInfo(stub, args)
+	} else if function == "getBCSList" {
+		return t.getBCSList(stub, args)
+	} else if function == "getBCSByBCSNo" {
+		return t.getBCSByBCSNo(stub, args)
+	} else if function == "getBCSsByBCID" {
+		return t.getBCSsByBCID(stub, args)
 	}
 
 	fmt.Println("invoke did not find func: " + function) //error
@@ -1426,4 +1434,102 @@ func identity(stub shim.ChaincodeStubInterface) (pb.Response, string, string) {
 	}
 	stringSlice := strings.Split(cert.Subject.CommonName, "@")
 	return shim.Success(nil), stringSlice[0], stringSlice[1]
+}
+
+/**
+	Role:管理员
+	OP：添加银行、企业、签约信息
+	Description：添加银行、企业、签约信息到链上
+	Return：
+ */
+func (t *SimpleChaincode) saveBCSInfo(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	if len(args) != 2 {
+		return shim.Error("Incorrect number of arguments. Expecting 2")
+	}
+	identity(stub)
+	bcs := &DataOfBCS{}
+	//查询链上是否已经存在相同数据，若存在则对由原有数据进行更新，若不存在，则新增数据
+	//数据编码
+	no := args[0]
+	bcsAsBytes, err := stub.GetState(no)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	if bcsAsBytes == nil {
+		bcs, err := decodeBCSData(args[1]);
+	}
+	else { // 链上已经存在该信息
+		err = json.Unmarshal(bcsAsBytes, &bcs) //unmarshal it aka JSON.parse()
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+	}
+	//=== Marshal Data of BCS ===
+	bcsJSONasBytes, err := json.Marshal(bcs)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	// === Save BCS to state ===
+	err = stub.PutState(no, bcsJSONasBytes)
+	if err != nil {
+		return shim.Error(fmt.Sprintf("Failed to create asset: %s, error: %s", args[0], err.Error()))
+	}
+	return shim.Success([]byte(no))
+}
+/**
+	Role:管理员
+	OP：获取银行、企业、签约信息
+	Description：通过类型从链上获取银行、企业、签约信息
+	Return：
+ */
+func (t *SimpleChaincode) getBCSList(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	if len(args) != 1 {
+		return shim.Error("Incorrect number of arguments. Expecting 1")
+	}
+	type := args[0]
+	queryString := fmt.Sprintf("{\"selector\":{\"Type\":\"%s\"}}", type)
+
+	queryResults, err := getQueryResultForQueryString(stub, queryString)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	return shim.Success(queryResults)
+}
+/**
+	Role:管理员
+	OP：获取银行、企业、签约信息
+	Description：根据id从链上获取银行、企业、签约信息
+	Return：
+ */
+func (t *SimpleChaincode) getBCSByBCSNo(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	if len(args) != 1 {
+		return shim.Error("Incorrect number of arguments. Expecting 1")
+	}
+	no := args[0]
+	queryString := fmt.Sprintf("{\"selector\":{\"No\":\"%s\"}}", no)
+
+	queryResults, err := getQueryResultForQueryString(stub, queryString)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	return shim.Success(queryResults)
+}
+/**
+	Role:管理员
+	OP：获取银行、企业、签约信息
+	Description：根据银行/企业id从链上获取银行、企业、签约信息
+	Return：
+ */
+func (t *SimpleChaincode) getBCSsByBCID(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	if len(args) != 2 {
+		return shim.Error("Incorrect number of arguments. Expecting 1")
+	}
+	no := args[0]
+	type := args[1]
+	queryString := fmt.Sprintf("{\"selector\":{\"$or\":[{\"DataBank.No\":\"%s\"},{\"DataCorp.No\":\"%s\"}],\"and\":[{\"Type\":\"%s\"}]}}", no,no,type);
+	queryResults, err := getQueryResultForQueryString(stub, queryString)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	return shim.Success(queryResults)
 }

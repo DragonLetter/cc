@@ -391,6 +391,9 @@ type Bank struct{
 	Address string
 	AccountNo string
 	AccountName string
+	PostCode string
+	Telephone string
+	Telefax string
 	Remark string
 }
 //企业
@@ -399,7 +402,9 @@ type Corporation struct {
 	Account string
 	DepositBank string
 	Address string
-
+	PostCode string
+	Telephone string
+	Telefax string
 }
 type LegalEntity struct{
 	No string
@@ -408,4 +413,20 @@ type LegalEntity struct{
 }
 type Carrier struct{
 	LegalEntity
+}
+
+//银行、企业、银行企业签约的数据
+type DataOfBCS{
+	//类型+编号  类型 B=>银行 C=>企业 S=>签约
+	No string
+	//类型  类型说明 Bank=>银行 Corp=>企业 Sign=>签约
+	Type string
+	//银行信息
+	DataBank Bank
+	//企业信息
+	DataCorp Corporation
+	//签约状态 0 申请 1.通过 -1.拒绝
+	StateSign int
+	//签约时间
+	SignDate string
 }
