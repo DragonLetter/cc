@@ -958,10 +958,12 @@ func (t *SimpleChaincode) lcAmendSubmit(stub shim.ChaincodeStubInterface, args [
 	if err != nil {
 		return shim.Error(err.Error())
 	}
-	expireDate, err := time.Parse("20060102", amendForm.AmendExpiryDate)
-	if err != nil {
-		return shim.Error("amendForm.AmendExpiryDate argument must be a date string yyyyMMdd")
-	}
+	// expireDate, err := time.Parse("2018-08-07T04:56:07.000+00:00", amendForm.AmendExpiryDate)
+	expireDate,_:= time.Parse("2018-08-07T04:56:07.000+00:00", amendForm.AmendExpiryDate)
+	// if err != nil {
+	// 	return shim.Error("amendForm.AmendExpiryDate argument must be a date string yyyyMMdd")
+	// }
+	// expireDate := amendForm.AmendExpiryDate;
 	transProgress := &TransProgress{userName, domain, time.Now(), "申请人提交修改", Approve, lc.CurrentStep}
 	lc.TransProgressFlow = append(lc.TransProgressFlow, *transProgress)
 	lc.AmendTimes = amendForm.AmendTimes
