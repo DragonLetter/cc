@@ -1449,22 +1449,10 @@ func (t *SimpleChaincode) saveBCSInfo(stub shim.ChaincodeStubInterface, args []s
 		return shim.Error("Incorrect number of arguments. Expecting 2")
 	}
 	identity(stub)
-	bcs := &DataOfBCS{}
-	//查询链上是否已经存在相同数据，若存在则对由原有数据进行更新，若不存在，则新增数据
-	//数据编码
 	no := args[0]
-	bcsAsBytes, err := stub.GetState(no)
+	bcs, err := decodeBCSData(args[1]);
 	if err != nil {
 		return shim.Error(err.Error())
-	}
-	if bcsAsBytes == nil {
-		bcs, err := decodeBCSData(args[1]);
-	}
-	else { // 链上已经存在该信息
-		err = json.Unmarshal(bcsAsBytes, &bcs) //unmarshal it aka JSON.parse()
-		if err != nil {
-			return shim.Error(err.Error())
-		}
 	}
 	//=== Marshal Data of BCS ===
 	bcsJSONasBytes, err := json.Marshal(bcs)
@@ -1488,8 +1476,8 @@ func (t *SimpleChaincode) getBCSList(stub shim.ChaincodeStubInterface, args []st
 	if len(args) != 1 {
 		return shim.Error("Incorrect number of arguments. Expecting 1")
 	}
-	type := args[0]
-	queryString := fmt.Sprintf("{\"selector\":{\"Type\":\"%s\"}}", type)
+	dtype := args[0]
+	queryString := fmt.Sprintf("{\"selector\":{\"Type\":\"%s\"}}", dtype)
 
 	queryResults, err := getQueryResultForQueryString(stub, queryString)
 	if err != nil {
@@ -1527,8 +1515,8 @@ func (t *SimpleChaincode) getBCSsByBCID(stub shim.ChaincodeStubInterface, args [
 		return shim.Error("Incorrect number of arguments. Expecting 1")
 	}
 	no := args[0]
-	type := args[1]
-	queryString := fmt.Sprintf("{\"selector\":{\"$or\":[{\"DataBank.No\":\"%s\"},{\"DataCorp.No\":\"%s\"}],\"and\":[{\"Type\":\"%s\"}]}}", no,no,type);
+	dtype := args[1]
+	queryString := fmt.Sprintf("{\"selector\":{\"$or\":[{\"DataBank.No\":\"%s\"},{\"DataCorp.No\":\"%s\"}],\"and\":[{\"Type\":\"%s\"}]}}", no,no,dtype);
 	queryResults, err := getQueryResultForQueryString(stub, queryString)
 	if err != nil {
 		return shim.Error(err.Error())

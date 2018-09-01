@@ -416,7 +416,7 @@ type Carrier struct{
 }
 
 //银行、企业、银行企业签约的数据
-type DataOfBCS{
+type DataOfBCS struct{
 	//类型+编号  类型 B=>银行 C=>企业 S=>签约
 	No string
 	//类型  类型说明 Bank=>银行 Corp=>企业 Sign=>签约
