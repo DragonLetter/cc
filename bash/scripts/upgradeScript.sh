@@ -66,6 +66,7 @@ installChaincode () {
 	PEER=$1
 	setGlobals $PEER
 	peer chaincode install -n mylc -v $2 -p github.com/hyperledger/fabric/examples/chaincode/go/LetterOfCredit >&log.txt
+	peer chaincode install -n bcs -v $2 -p github.com/hyperledger/fabric/examples/chaincode/go/LetterOfCredit >&log.txt
 	#peer chaincode install -n mycc -v 1.0 -p github.com/hyperledger/fabric/examples/chaincode/go/chaincode_example02 >&log.txt
 	res=$?
 	cat log.txt
@@ -81,8 +82,10 @@ upgradeChaincode () {
 	# lets supply it directly as we know it using the "-o" option
 	if [ -z "$CORE_PEER_TLS_ENABLED" -o "$CORE_PEER_TLS_ENABLED" = "false" ]; then
 		peer chaincode upgrade -o orderer.example.com:7050 -C $CHANNEL_NAME -n mylc -v $2 -c '{"Args":[]}' >&log.txt
+		peer chaincode upgrade -o orderer.example.com:7050 -C $CHANNEL_NAME -n bcs -v $2 -c '{"Args":[]}' >&log.txt
 	else
 		peer chaincode upgrade -o orderer.example.com:7050 --tls $CORE_PEER_TLS_ENABLED --cafile $ORDERER_CA -C $CHANNEL_NAME -n mylc -v $2 -c '{"Args":[]}'  >&log.txt
+		peer chaincode upgrade -o orderer.example.com:7050 --tls $CORE_PEER_TLS_ENABLED --cafile $ORDERER_CA -C $CHANNEL_NAME -n bcs -v $2 -c '{"Args":[]}'  >&log.txt
 		#peer chaincode upgrade -o orderer.example.com:7050 --tls true --cafile $ORDERER_CA -C $CHANNEL_NAME -n mycc -v $2 -c '{"Args":["init","a","100","b","200"]}' >&log.txt
 	fi
 	res=$?
