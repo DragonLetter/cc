@@ -36,9 +36,9 @@ const (
 	BeneficiaryReceiveLCStep
 	ApplicantLCAmendStep
 	MultiPartyCountersignStep
-	BeneficiaryHandOverBillsStep
-	AdvisingBankReviewBillsStep
-	IssuingBankAcceptOrRejectStep
+	// BeneficiaryHandOverBillsStep
+	// AdvisingBankReviewBillsStep
+	// IssuingBankAcceptOrRejectStep
 	ApplicantRetireBillsStep
 	IssuingBankReviewRetireBillsStep
 	IssuingBankCloseLCStep
@@ -56,13 +56,23 @@ var LCStepText  = map[int] string{
 	BeneficiaryReceiveLCStep : "BeneficiaryReceiveLCStep",
 	ApplicantLCAmendStep : "ApplicantLCAmendStep",
 	MultiPartyCountersignStep : "MultiPartyCountersignStep",
-	BeneficiaryHandOverBillsStep : "BeneficiaryHandOverBillsStep",
-	AdvisingBankReviewBillsStep : "AdvisingBankReviewBillsStep",
-	IssuingBankAcceptOrRejectStep : "IssuingBankAcceptOrRejectStep",
+	// BeneficiaryHandOverBillsStep : "BeneficiaryHandOverBillsStep",
+	// AdvisingBankReviewBillsStep : "AdvisingBankReviewBillsStep",
+	// IssuingBankAcceptOrRejectStep : "IssuingBankAcceptOrRejectStep",
 	ApplicantRetireBillsStep : "ApplicantRetireBillsStep",
 	IssuingBankReviewRetireBillsStep : "IssuingBankReviewRetireBillsStep",
 	IssuingBankCloseLCStep : "IssuingBankCloseLCStep",
 	LCEnd : "LCEnd",
+}
+
+var HandOverBillStep = map[int] string{
+	BeneficiaryHandOverBillsStep : "BeneficiaryHandOverBillsStep",    // 受益人交单，初始状态
+	IssuingBankCheckBillStep : "IssuingBankCheckBillStep",    // 开证行审单
+	ApplicantAcceptOrRejectStep : "ApplicantAcceptOrRejectStep",    // 申请人接受或拒绝审单结果
+	IssuingBankAcceptanceStep : "IssuingBankAcceptanceStep",    // 开证行承兑
+	ApplicantRejectStep : "ApplicantRejectStep",    // 申请人拒付，结束状态
+	IssuingBankRejectStep : "IssuingBankRejectStep",    // 开证行拒付，结束状态
+	HandoverBillSuccStep : "HandoverBillSuccStep",    // 交单成功，结束状态
 }
 
 //操作状态
@@ -283,17 +293,14 @@ type TransProgress struct {
 
 //交单
 type LCTransDocsReceive struct{
-	//交单编号
-	No string
+	No int `json:"No,string,omitempty"`
 	ReceivedAmount float64 `json:"ReceivedAmount,string,omitempty"`
 	ReceivedDate time.Time `json:"ReceivedDate,string,omitempty"`
 	BillOfLandings []BillOfLanding
 	//提货单
 	BillOfLadingDocs []Document
-	//不符点
-	Discrepancy string
-	//状态(0:完成，1.交单 2.开证行审单，3.申请人确认承兑，4.开证行承兑)
-	Status int
+	HandOverBillStep string
+	TransProgressFlow []TransProgress
 }
 
 //货运单
