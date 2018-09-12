@@ -82,7 +82,7 @@ type LCLetter struct {
 	//信用证正本
 	LetterOfCredit LetterOfCredit
 	//交单信息
-	LCTransDocsReceive []LCTransDocsReceive
+	LCTransDocsReceive LCTransDocsReceive
 	//保证金
 	LCTransDeposit LCTransDeposit
 	//承兑金额
@@ -283,17 +283,11 @@ type TransProgress struct {
 
 //交单
 type LCTransDocsReceive struct{
-	//交单编号
-	No string
 	ReceivedAmount float64 `json:"ReceivedAmount,string,omitempty"`
 	ReceivedDate time.Time `json:"ReceivedDate,string,omitempty"`
 	BillOfLandings []BillOfLanding
 	//提货单
 	BillOfLadingDocs []Document
-	//不符点
-	Discrepancy string
-	//状态(0:完成，1.交单 2.开证行审单，3.申请人确认承兑，4.开证行承兑)
-	Status int
 }
 
 //货运单
