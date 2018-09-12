@@ -408,13 +408,9 @@ type Corporation struct {
 	Account string
 	DepositBank string
 	Address string
-	Nation string
-	Contact string
-	Email string
 	PostCode string
 	Telephone string
 	Telefax string
-	CreateTime string
 }
 type LegalEntity struct{
 	No string
