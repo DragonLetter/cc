@@ -300,6 +300,8 @@ type LCTransDocsReceive struct{
 	//提货单
 	BillOfLadingDocs []Document
 	HandOverBillStep string
+	//描述
+	Discrepancy string
 	TransProgressFlow []TransProgress
 }
 
@@ -415,9 +417,13 @@ type Corporation struct {
 	Account string
 	DepositBank string
 	Address string
+	Nation string
+	Contact string
+	Email string
 	PostCode string
 	Telephone string
 	Telefax string
+	CreateTime string
 }
 type LegalEntity struct{
 	No string

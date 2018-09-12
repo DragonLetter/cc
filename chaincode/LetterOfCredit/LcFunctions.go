@@ -1185,13 +1185,13 @@ func (t *SimpleChaincode) lcCancel(stub shim.ChaincodeStubInterface, args []stri
 }
 
 /**
-	Role:通知行
+	Role:开证行
 	OP:确认受益人提交的单
 	Status:生效
-	Description：通知行审核受益人提交的单据
+	Description：开证行审核受益人提交的单据
  */
 func (t *SimpleChaincode) reviewBills(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	if len(args) != 3 {
+	if len(args) != 4 {
 		return shim.Error("Incorrect number of arguments. Expecting 3. no opinion approveOrReject")
 	}
 	no := args[0]
@@ -1208,33 +1208,40 @@ func (t *SimpleChaincode) reviewBills(stub shim.ChaincodeStubInterface, args []s
 	if !strings.EqualFold(lc.LetterOfCredit.AdvisingBank.Domain, domain) {
 		return shim.Error("Current operator domain:" + domain + " is not lc advising domain:" + lc.LetterOfCredit.AdvisingBank.Domain)
 	}
-	t.FSM.SetCurrent(lc.CurrentStep)
-
-	opinionString := args[1]
-	choice, err := strconv.ParseBool(args[2])
+	billNo := args[1]
+	opinionString := args[2]
+	choice, err := strconv.ParseBool(args[3])
 	if err != nil {
-		return shim.Error("2nd arguments must be bool")
+		return shim.Error("3nd arguments must be bool")
 	}
 	var operation int
+	var handleStep string
 	if choice {
-		err = t.FSM.Event("advisingBankApproveBills") //触发状态机的事件
 		if err != nil {
 			return shim.Error(err.Error())
 		}
 		operation = Approve
-		lc.Owner = lc.LetterOfCredit.Beneficiary.LegalEntity
-		lc.LcStatus = Effective
+		handleStep = HandOverBillStep[IssuingBankCheckBillStep]
+		lc.Owner = lc.LetterOfCredit.IssuingBank.LegalEntity
 	} else {
-		err = t.FSM.Event("advisingBankRejectBills") //触发状态机的事件
 		if err != nil {
 			return shim.Error(err.Error())
 		}
 		operation = Overrule
-		lc.LcStatus = OriginalModify
+		handleStep = HandOverBillStep[IssuingBankRejectStep]
+		lc.Owner = lc.LetterOfCredit.Beneficiary.LegalEntity
 	}
-	transProgress := &TransProgress{userName, domain, time.Now(), opinionString, operation, lc.CurrentStep}
-	lc.TransProgressFlow = append(lc.TransProgressFlow, *transProgress)
-	lc.CurrentStep = t.FSM.Current()
+	// 设置交单状态变化，记录在交单子结构中
+	for i := 0; i < len(lc.LCTransDocsReceive); i++ {
+    	if lc.LCTransDocsReceive[i].No == billNo {
+			lc.LCTransDocsReceive[i].Discrepancy = opinionString
+        	lc.LCTransDocsReceive[i].HandOverBillStep = handleStep
+	        transProgress := &TransProgress{userName, domain, time.Now(), opinionString, operation, handleStep}
+    	    lc.LCTransDocsReceive[i].TransProgressFlow = append(lc.LCTransDocsReceive[i].TransProgressFlow, *transProgress)
+        	break
+    	}
+	}
+
 	jsonB, _ := json.Marshal(lc)
 	err = stub.PutState(no, jsonB) //rewrite the lc
 	if err != nil {
@@ -1269,58 +1276,51 @@ func (t *SimpleChaincode) lcAcceptOrReject(stub shim.ChaincodeStubInterface, arg
 	if !strings.EqualFold(lc.LetterOfCredit.IssuingBank.Domain, domain) {
 		return shim.Error("Current operator domain:" + domain + " is not issuing bank domain:" + lc.LetterOfCredit.IssuingBank.Domain)
 	}
-	t.FSM.SetCurrent(lc.CurrentStep)
-
-	acceptAmount, err := strconv.ParseFloat(args[1], 64)
+	billNo := args[1]
+	acceptAmount, err := strconv.ParseFloat(args[2], 64)
 	if err != nil {
 		return shim.Error("1st argument must be a numeric string")
 	}
-	lc.AcceptAmount = acceptAmount
-	lc.NotPayAmount = lc.LetterOfCredit.Amount - acceptAmount
-
-	discrepancies := strings.Split(args[2], ",")
-	discrepanciesString := args[2]
-	lc.Discrepancy = discrepancies
-
 	opinionString := args[3]
 	choice, err := strconv.ParseBool(args[4])
 	if err != nil {
 		return shim.Error("2nd arguments must be bool")
 	}
 	var operation int
-	if choice { //承兑
-		if !isEqual(acceptAmount, lc.LetterOfCredit.Amount) {
-			return shim.Error("accept amount must be equaled to lc.Amount")
-		}
-		if !strings.EqualFold(discrepanciesString, "") {
-			return shim.Error("discrepancies must be null")
-		}
-		lc.AcceptDate = time.Now()
-		operation = Approve
-		lc.LcStatus = Accept
-
-		err = t.FSM.Event("issuingBankAccept") //触发状态机的事件，同意承兑
+	var handleStep string
+	var overStep string
+	if choice {
+		lc.AcceptAmount = lc.AcceptAmount + acceptAmount
+		lc.NotPayAmount = lc.LetterOfCredit.Amount - lc.AcceptAmount
 		if err != nil {
 			return shim.Error(err.Error())
 		}
-	} else { //拒付
-		if !isEqual(acceptAmount, 0.0) {
-			return shim.Error("accept amount must be equaled to 0.0")
-		}
-		if len(discrepancies) == 0 {
-			return shim.Error("discrepancies must not be null")
+		operation = Approve
+		handleStep = HandOverBillStep[IssuingBankAcceptanceStep]
+		overStep = HandOverBillStep[HandoverBillSuccStep]
+		lc.Owner = lc.LetterOfCredit.IssuingBank.LegalEntity
+	} else {
+		if err != nil {
+			return shim.Error(err.Error())
 		}
 		operation = Overrule
-		lc.LcStatus = HandOverBill
-		err = t.FSM.Event("issuingBankReject") //触发状态机的事件，拒付
-		if err != nil {
-			return shim.Error(err.Error())
-		}
+		handleStep = HandOverBillStep[IssuingBankRejectStep]
+		lc.Owner = lc.LetterOfCredit.Beneficiary.LegalEntity
 	}
-	transProgress := &TransProgress{userName, domain, time.Now(), opinionString, operation, lc.CurrentStep}
-	lc.TransProgressFlow = append(lc.TransProgressFlow, *transProgress)
-	lc.CurrentStep = t.FSM.Current()
-
+	// 设置交单状态变化，记录在交单子结构中
+	for i := 0; i < len(lc.LCTransDocsReceive); i++ {
+    	if lc.LCTransDocsReceive[i].No == billNo {
+        	lc.LCTransDocsReceive[i].HandOverBillStep = handleStep
+	        transProgress := &TransProgress{userName, domain, time.Now(), opinionString, operation, handleStep}
+			lc.LCTransDocsReceive[i].TransProgressFlow = append(lc.LCTransDocsReceive[i].TransProgressFlow, *transProgress)
+			if overStep != ""{
+				transProgress := &TransProgress{userName, domain, time.Now(), opinionString, operation, overStep}
+				lc.LCTransDocsReceive[i].TransProgressFlow = append(lc.LCTransDocsReceive[i].TransProgressFlow, *transProgress)
+			}
+        	break
+    	}
+	}
+	
 	jsonB, _ := json.Marshal(lc)
 	err = stub.PutState(no, jsonB) //rewrite the lc
 	if err != nil {
