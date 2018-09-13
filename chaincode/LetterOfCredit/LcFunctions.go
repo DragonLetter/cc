@@ -989,6 +989,7 @@ func (t *SimpleChaincode) appliantCheckBills(stub shim.ChaincodeStubInterface, a
 	for i := 0; i < len(lc.LCTransDocsReceive); i++ {
 		if lc.LCTransDocsReceive[i].No == billNo {
 			lc.LCTransDocsReceive[i].HandOverBillStep = handleStep
+			lc.LCTransDocsReceive[i].Discrepancy = opinionString
 			transProgress := &TransProgress{userName, domain, time.Now(), opinionString, operation, handleStep}
 			lc.LCTransDocsReceive[i].TransProgressFlow = append(lc.LCTransDocsReceive[i].TransProgressFlow, *transProgress)
             break
