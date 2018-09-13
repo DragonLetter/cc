@@ -82,6 +82,31 @@ const (
 	Processing //处理中
 )
 
+//发起修改步骤
+const (
+	// LCStart = iota
+	AmendApplicantSubmitStep = iota  //申请人发起修改
+	AmendIssuingBankAcceptStep //开证行同意
+	AmendIssuingBankRejectStep //开证行拒绝
+	AmendAdvisingBankAcceptStep //通知行同意
+	AmendAdvisingBankRejectStep //通知行拒绝
+	AmendBeneficiaryAcceptStep  //受益人同意
+	AmendBeneficiaryRejectStep  //受益人拒绝
+	AmendEnd //结束
+)
+
+var AmendStepText  = map[int] string{	
+	AmendApplicantSubmitStep : "AmendApplicantSubmitStep",
+	AmendIssuingBankAcceptStep : "AmendIssuingBankAcceptStep",
+	AmendIssuingBankRejectStep : "AmendIssuingBankRejectStep",
+	AmendAdvisingBankAcceptStep : "AmendAdvisingBankAcceptStep",
+	AmendAdvisingBankRejectStep : "AmendAdvisingBankRejectStep",
+	AmendBeneficiaryAcceptStep : "AmendBeneficiaryAcceptStep",
+	AmendBeneficiaryRejectStep : "AmendBeneficiaryRejectStep",
+	AmendEnd : "AmendEnd",	
+}
+
+
 //链上存储的信用证信息
 type LCLetter struct {
 	No string `json:"no"`
@@ -125,6 +150,10 @@ type LCLetter struct {
 	TransProgressFlow []TransProgress
 	//信用证当前步骤
 	CurrentStep string
+	//发起修改
+	AmendFormFlow []AmendForm	
+	//发起修改当前编号（申请人可以多次发起修改，所以需要存储发起修改的当前编号）
+	AmendNum int
 }
 
 //信用证申请表
@@ -362,6 +391,8 @@ type Contract struct{
 type AmendForm struct{
 	//所属信用证
 	//LC LCLetter
+    //修改编号
+	AmendNo int `json:"amendNo,string"`
 	//改证次数
 	AmendTimes int64 `json:"amendTimes,string"`
 	//修改后币种
@@ -375,15 +406,30 @@ type AmendForm struct{
 	//期限增减
 	AddedDays int64 `json:"addedDays,string"`
 	//改证后有效日期
-	AmendExpiryDate string
+	AmendExpiryDate time.Time `json:"AmendExpiryDate,string,omitempty"`
 	//改证日期
 	//LCAmendDate time.Time
 	//货物发送最终目的地
 	TransPortName string
 	//保证金增减金额
 	AddedDepositAmt	float64 `json:"addedDepositAmt,string"`
+	//当前操作状态
+	Status string
+	//发起修改交易进度
+	AmendFormProgressFlow []AmendFormProgress
 	//详细描述
 	//Details	string
+	
+}
+
+//发起修改交易进度
+type AmendFormProgress struct {
+	Name string
+	Role string
+	Time	time.Time `json:"time,string,omitempty"`
+	Description	string
+	Operation int `json:"operation,string,omitempty"`
+	Status	string
 }
 
 //文件
