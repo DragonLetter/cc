@@ -922,7 +922,7 @@ func (t *SimpleChaincode) handOverBills(stub shim.ChaincodeStubInterface, args [
 	lCTransDocsReceive.BillOfLadingDocs = BillOfLadingDocs
 
 	// 设置受益人交单状态变化，记录在交单子结构中
-	lCTransDocsReceive.HandOverBillStep = HandOverBillStep[BeneficiaryHandOverBillsStep]
+	lCTransDocsReceive.HandOverBillStep = HandOverBillStep[IssuingBankCheckBillStep]
     transProgress := &TransProgress{userName, domain, time.Now(), "受益人执行交单", Approve, HandOverBillStep[BeneficiaryHandOverBillsStep]}
     lCTransDocsReceive.TransProgressFlow = append(lCTransDocsReceive.TransProgressFlow, *transProgress)
 	
@@ -977,7 +977,7 @@ func (t *SimpleChaincode) appliantCheckBills(stub shim.ChaincodeStubInterface, a
 	var handleStep string
 	if choice {
 		operation = Approve
-		handleStep = HandOverBillStep[ApplicantAcceptOrRejectStep]
+		handleStep = HandOverBillStep[IssuingBankAcceptanceStep]
 		lc.Owner = lc.LetterOfCredit.IssuingBank.LegalEntity
 	} else {
 		operation = Overrule
@@ -990,7 +990,7 @@ func (t *SimpleChaincode) appliantCheckBills(stub shim.ChaincodeStubInterface, a
 		if lc.LCTransDocsReceive[i].No == billNo {
 			lc.LCTransDocsReceive[i].HandOverBillStep = handleStep
 			lc.LCTransDocsReceive[i].Discrepancy = opinionString
-			transProgress := &TransProgress{userName, domain, time.Now(), opinionString, operation, handleStep}
+			transProgress := &TransProgress{userName, domain, time.Now(), opinionString, operation, HandOverBillStep[ApplicantAcceptOrRejectStep]}
 			lc.LCTransDocsReceive[i].TransProgressFlow = append(lc.LCTransDocsReceive[i].TransProgressFlow, *transProgress)
             break
 		}
@@ -1217,12 +1217,14 @@ func (t *SimpleChaincode) reviewBills(stub shim.ChaincodeStubInterface, args []s
 	}
 	var operation int
 	var handleStep string
+	var curStep string
 	if choice {
 		if err != nil {
 			return shim.Error(err.Error())
 		}
 		operation = Approve
 		handleStep = HandOverBillStep[IssuingBankCheckBillStep]
+		curStep = HandOverBillStep[IssuingBankAcceptanceStep]
 		lc.Owner = lc.LetterOfCredit.IssuingBank.LegalEntity
 	} else {
 		if err != nil {
@@ -1236,7 +1238,7 @@ func (t *SimpleChaincode) reviewBills(stub shim.ChaincodeStubInterface, args []s
 	for i := 0; i < len(lc.LCTransDocsReceive); i++ {
     	if lc.LCTransDocsReceive[i].No == billNo {
 			lc.LCTransDocsReceive[i].Discrepancy = opinionString
-        	lc.LCTransDocsReceive[i].HandOverBillStep = handleStep
+        	lc.LCTransDocsReceive[i].HandOverBillStep = curStep
 	        transProgress := &TransProgress{userName, domain, time.Now(), opinionString, operation, handleStep}
     	    lc.LCTransDocsReceive[i].TransProgressFlow = append(lc.LCTransDocsReceive[i].TransProgressFlow, *transProgress)
         	break
@@ -1289,7 +1291,7 @@ func (t *SimpleChaincode) lcAcceptOrReject(stub shim.ChaincodeStubInterface, arg
 	}
 	var operation int
 	var handleStep string
-	var overStep string
+	var curStep string
 	if choice {
 		lc.AcceptAmount = lc.AcceptAmount + acceptAmount
 		lc.NotPayAmount = lc.LetterOfCredit.Amount - lc.AcceptAmount
@@ -1298,7 +1300,7 @@ func (t *SimpleChaincode) lcAcceptOrReject(stub shim.ChaincodeStubInterface, arg
 		}
 		operation = Approve
 		handleStep = HandOverBillStep[IssuingBankAcceptanceStep]
-		overStep = HandOverBillStep[HandoverBillSuccStep]
+		curStep = HandOverBillStep[HandoverBillSuccStep]
 		lc.Owner = lc.LetterOfCredit.IssuingBank.LegalEntity
 	} else {
 		if err != nil {
@@ -1306,19 +1308,15 @@ func (t *SimpleChaincode) lcAcceptOrReject(stub shim.ChaincodeStubInterface, arg
 		}
 		operation = Overrule
 		handleStep = HandOverBillStep[IssuingBankRejectStep]
+		curStep = HandOverBillStep[IssuingBankRejectStep]
 		lc.Owner = lc.LetterOfCredit.Beneficiary.LegalEntity
 	}
 	// 设置交单状态变化，记录在交单子结构中
 	for i := 0; i < len(lc.LCTransDocsReceive); i++ {
     	if lc.LCTransDocsReceive[i].No == billNo {
-        	lc.LCTransDocsReceive[i].HandOverBillStep = handleStep
+        	lc.LCTransDocsReceive[i].HandOverBillStep = curStep
 	        transProgress := &TransProgress{userName, domain, time.Now(), opinionString, operation, handleStep}
 			lc.LCTransDocsReceive[i].TransProgressFlow = append(lc.LCTransDocsReceive[i].TransProgressFlow, *transProgress)
-			if overStep != ""{
-				lc.LCTransDocsReceive[i].HandOverBillStep = overStep
-				transProgress := &TransProgress{userName, domain, time.Now(), opinionString, operation, overStep}
-				lc.LCTransDocsReceive[i].TransProgressFlow = append(lc.LCTransDocsReceive[i].TransProgressFlow, *transProgress)
-			}
         	break
     	}
 	}
