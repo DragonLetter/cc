@@ -1314,6 +1314,7 @@ func (t *SimpleChaincode) lcAcceptOrReject(stub shim.ChaincodeStubInterface, arg
 	        transProgress := &TransProgress{userName, domain, time.Now(), opinionString, operation, handleStep}
 			lc.LCTransDocsReceive[i].TransProgressFlow = append(lc.LCTransDocsReceive[i].TransProgressFlow, *transProgress)
 			if overStep != ""{
+				lc.LCTransDocsReceive[i].HandOverBillStep = overStep
 				transProgress := &TransProgress{userName, domain, time.Now(), opinionString, operation, overStep}
 				lc.LCTransDocsReceive[i].TransProgressFlow = append(lc.LCTransDocsReceive[i].TransProgressFlow, *transProgress)
 			}
