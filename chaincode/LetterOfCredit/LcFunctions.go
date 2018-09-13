@@ -107,7 +107,15 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.getBCSByBCSNo(stub, args)
 	} else if function == "getBCSsByBCID" {
 		return t.getBCSsByBCID(stub, args)
+	} else if function == "issueLetterOfAmend" {
+		return t.issueLetterOfAmend(stub, args)
+	} else if function == "advisingLetterOfAmend" {
+		return t.advisingLetterOfAmend(stub, args)
+	} else if function == "beneficiaryLetterOfAmend" {
+		return t.beneficiaryLetterOfAmend(stub, args)
 	}
+
+	
 
 	fmt.Println("invoke did not find func: " + function) //error
 	return shim.Error("Received unknown function invocation")
@@ -454,14 +462,16 @@ func (t *SimpleChaincode) saveLCApplication(stub shim.ChaincodeStubInterface, ar
 		countersign := map[string]bool{
 		}
 		var transProgressFlow []TransProgress
+
+		var amendFormFlow []AmendForm //发起修改
+
 		//保证金内容在填申请时为空
 		lcTransDeposit, err := decodeLCTransDeposit("{\"DepositAmount\":\"0.0\", \"CommitAmount\":\"0.0\", \"DepositDoc\":{\"FileName\":\"\",\"FileUri\":\"\",\"FileHash\":\"\",\"FileSignature\":\"\",\"Uploader\":\"\"}}")
 		if err != nil {
 			return shim.Error(err.Error())
 		}
-		//交单内容在填申请时为空
-		var lcTransDocsReceive []LCTransDocsReceive
-//		lCTransDocsReceive, err:= decodeLCTransDocsReceive("{\"ReceivedAmount\":\"0.0\"}")
+		//交单内容在填申请时为空	
+		lCTransDocsReceive, err:= decodeLCTransDocsReceive("{\"ReceivedAmount\":\"0.0\"}")
 		//货运单内容在填申请时为空
 		//billOfLanding, err := decodeBillOfLanding("{\"GoodsNo\":\"\",\"GoodsDesc\":\"\",\"LoadPortName\":\"\",\"TransPortName\":\"\",\"LatestShipDate\":\"\",\"PartialShipment\":\"false\",\"TrackingNo\":\"\",\"Carrier\":{\"No\":\"\",\"Name\":\"\",\"Domain\":\"\"},\"ShippingTime\":\"\",\"Owner\":{\"NO\":\"\",\"Name\":\"\",\"Domain\":\"\"}}")
 		if err != nil {
@@ -474,7 +484,7 @@ func (t *SimpleChaincode) saveLCApplication(stub shim.ChaincodeStubInterface, ar
 
 		//申请人填写申请表时，此时还没有信用证号，执行保存操作
 
-		lc = &LCLetter{no, "", applicationForm, letterOfCredit, lcTransDocsReceive, lcTransDeposit, acceptAmount, nopayAmount, acceptDate, int64(amendTimes), int64(aBTimes), false, isValid, isClose, isCancel, lcStatus, countersign, []string{}, owner, transProgressFlow, ""}
+		lc = &LCLetter{no, "", applicationForm, letterOfCredit, lCTransDocsReceive, lcTransDeposit, acceptAmount, nopayAmount, acceptDate, int64(amendTimes), int64(aBTimes), false, isValid, isClose, isCancel, lcStatus, countersign, []string{}, owner, transProgressFlow, "", amendFormFlow, 0}
 
 	} else { // 链上已经存在该LC信息
 		err = json.Unmarshal(lcAsBytes, &lc) //unmarshal it aka JSON.parse()
@@ -924,13 +934,15 @@ func (t *SimpleChaincode) handOverBills(stub shim.ChaincodeStubInterface, args [
 /**
 	Role：申请人
 	OP:信用证修改
-	Status:正本修改
-	Description：申请人发起信用证修改。须由开证行、通知行、收益人重新确认
-	Return：
+	Status：
+	Description：申请人发起信用证修改。须由开证行、通知行、受益人重新确认
+	Return:
  */
-func (t *SimpleChaincode) lcAmendSubmit(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+
+ func (t *SimpleChaincode) lcAmendSubmit(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+
 	if len(args) != 2 {
-		return shim.Error("Incorrect number of arguments. Expecting 2. no, amendForm")
+		return shim.Error("Incorrect number of arguments. Expecting 2. no")
 	}
 	no := args[0]
 	lcBytes, err := stub.GetState(no)
@@ -943,49 +955,33 @@ func (t *SimpleChaincode) lcAmendSubmit(stub shim.ChaincodeStubInterface, args [
 		return shim.Error(err.Error())
 	}
 	_, userName, domain := identity(stub)
-	if !strings.EqualFold(lc.LetterOfCredit.Applicant.Domain, domain) {
-		return shim.Error("Current operator domain:" + domain + " is not lc apply corporation domain:" + lc.LetterOfCredit.Applicant.Domain)
+	if !strings.EqualFold(lc.ApplicationForm.Applicant.Domain, domain) {
+		return shim.Error("Current operator domain:" + domain + " is not lc apply corporation domain:" + lc.ApplicationForm.Applicant.Domain)
 	}
-	t.FSM.SetCurrent(lc.CurrentStep)
+	// t.FSM.SetCurrent(lc.CurrentStep)
 
-	//if strings.EqualFold(lc.Owner.Name,lc.BenefCorp.Name) {
-	//	return shim.Error(no + "LC can not be amended")
-	//}
-	amendForm, err := decodeAmendForm(args[1])
+	amendFormData, err := decodeAmendForm(args[1])
 	if err != nil {
 		return shim.Error(err.Error())
 	}
-	err = t.FSM.Event("applicantSubmitLCAmend") //触发状态机的事件
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	// expireDate, err := time.Parse("2018-08-07T04:56:07.000+00:00", amendForm.AmendExpiryDate)
-	expireDate,_:= time.Parse("2018-08-07T04:56:07.000+00:00", amendForm.AmendExpiryDate)
+
+	// expireDate,_:= time.Parse("2018-08-07T04:56:07.000+00:00", amendFormData.AmendExpiryDate)
+	lc.AmendNum = lc.AmendNum + 1
+
+	var amendFormTransFlow []AmendFormProgress
+
+	amendFormTransProgress := AmendFormProgress{userName, domain, time.Now(), "申请人提交发起修改申请", Approve, AmendStepText[AmendApplicantSubmitStep]}
+	amendForm := AmendForm{lc.AmendNum, amendFormData.AmendTimes, amendFormData.AmendedCurrency, amendFormData.AmendedAmt, amendFormData.AddedDays, amendFormData.AmendExpiryDate, amendFormData.TransPortName, amendFormData.AddedDepositAmt, AmendStepText[AmendApplicantSubmitStep], amendFormTransFlow }
+	amendForm.AmendFormProgressFlow = append(amendForm.AmendFormProgressFlow, amendFormTransProgress)
+
+	lc.AmendFormFlow = append(lc.AmendFormFlow, amendForm)
+
+	// err = t.FSM.Event("applicantSubmitLCApplication") //触发状态机的事件
 	// if err != nil {
-	// 	return shim.Error("amendForm.AmendExpiryDate argument must be a date string yyyyMMdd")
+	// 	return shim.Error(err.Error())
 	// }
-	// expireDate := amendForm.AmendExpiryDate;
-	transProgress := &TransProgress{userName, domain, time.Now(), "申请人提交修改", Approve, lc.CurrentStep}
-	lc.TransProgressFlow = append(lc.TransProgressFlow, *transProgress)
-	lc.AmendTimes = amendForm.AmendTimes
-
-	lc.LetterOfCredit.Currency = amendForm.AmendedCurrency
-	lc.ApplicationForm.Currency = amendForm.AmendedCurrency
-
-	lc.LetterOfCredit.Amount = amendForm.AmendedAmt
-	lc.ApplicationForm.Amount = amendForm.AmendedAmt
-
-	lc.LetterOfCredit.DocDelay = lc.LetterOfCredit.DocDelay + amendForm.AddedDays
-	lc.ApplicationForm.DocDelay = lc.LetterOfCredit.DocDelay + amendForm.AddedDays
-
-	lc.LetterOfCredit.ExpiryDate = expireDate
-	lc.ApplicationForm.ExpiryDate = expireDate
-
-	lc.LetterOfCredit.GoodsInfo.ShippingPlace = amendForm.TransPortName
-	lc.ApplicationForm.GoodsInfo.ShippingPlace = amendForm.TransPortName
-
-	lc.LCTransDeposit.DepositAmount = lc.LCTransDeposit.DepositAmount + amendForm.AddedDepositAmt
-	lc.CurrentStep = t.FSM.Current()
+	// lc.LcStatus = Apply
+	// lc.CurrentStep = t.FSM.Current()
 
 	jsonB, _ := json.Marshal(lc)
 	err = stub.PutState(no, jsonB) //rewrite the lc
@@ -994,6 +990,245 @@ func (t *SimpleChaincode) lcAmendSubmit(stub shim.ChaincodeStubInterface, args [
 	}
 	return shim.Success(nil)
 }
+
+/**
+	Role：开证行
+	OP:发起修改同意或拒绝
+	Status：发起修改
+	Description：申请人提交发起修改，开证行操作（第一步）
+	Return:
+ */
+ func (t *SimpleChaincode) issueLetterOfAmend(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+
+	if len(args) != 4 {
+		return shim.Error("Incorrect number of arguments. Expecting 4. no opinion approveOrReject issueLetterOfAmend")
+	}
+	no := args[0]
+	lcBytes, err := stub.GetState(no)
+	if err != nil {
+		return shim.Error("query Letter of Credit fail. Number:" + no)
+	}
+	lc := LCLetter{}
+	err = json.Unmarshal(lcBytes, &lc) //unmarshal it aka JSON.parse()
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	_, userName, domain := identity(stub)
+	if !strings.EqualFold(lc.ApplicationForm.IssuingBank.Domain, domain) {
+		return shim.Error("Current operator domain:" + domain + " is not issuing bank domain:" + lc.ApplicationForm.IssuingBank.Domain)
+	}
+	// t.FSM.SetCurrent(lc.
+
+	amendNo := args[1]
+	
+	// queryString := fmt.Sprintf("{\"selector\":{\"$and\":[{\"no\":\"%s\"},{\"AmendForm.AmendNo\":\"%s\"}]}}", no, amendNo)
+	// queryResults, err := getQueryResultForQueryString(stub, queryString)
+	// if err != nil {
+	// 	return shim.Error(err.Error())
+	// }
+
+	// amend := AmendForm{}
+	// err = json.Unmarshal(lcBytes, &amend) //unmarshal it aka JSON.parse()
+	// if err != nil {
+	// 	return shim.Error(err.Error())
+	// }
+
+	opinionString := args[2]
+	choice, err := strconv.ParseBool(args[3])
+	if err != nil {
+		return shim.Error("3rd arguments must be bool")
+	}	
+	
+    for i := 0; i < len(lc.AmendFormFlow); i++{
+		if amendNo == strconv.Itoa(lc.AmendFormFlow[i].AmendNo){
+			if choice {
+				lc.AmendFormFlow[i].Status = AmendStepText[AmendIssuingBankAcceptStep]	
+				amendFormTransProgress := AmendFormProgress{userName, domain, time.Now(), opinionString, Approve, AmendStepText[AmendApplicantSubmitStep]}
+				lc.AmendFormFlow[i].AmendFormProgressFlow = append(lc.AmendFormFlow[i].AmendFormProgressFlow, amendFormTransProgress)		
+			} else {
+				lc.AmendFormFlow[i].Status = AmendStepText[AmendEnd]
+				amendFormTransProgress := AmendFormProgress{userName, domain, time.Now(), opinionString, Overrule, AmendStepText[AmendIssuingBankRejectStep]}
+				lc.AmendFormFlow[i].AmendFormProgressFlow = append(lc.AmendFormFlow[i].AmendFormProgressFlow, amendFormTransProgress)
+			}
+			break;
+		}
+	}
+
+	jsonB, _ := json.Marshal(lc)
+	err = stub.PutState(no, jsonB) //rewrite the lc
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	return shim.Success(nil)
+}
+
+/**
+	Role：通知行
+	OP:发起修改同意或拒绝
+	Status：发起修改
+	Description：申请人提交发起修改，通知行操作（开证行同意后到通知行）
+	Return:
+ */
+ func (t *SimpleChaincode) advisingLetterOfAmend(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+
+	if len(args) != 4 {
+		return shim.Error("Incorrect number of arguments. Expecting 4. no opinion approveOrReject advisingLetterOfAmend")
+	}
+	no := args[0]
+	lcBytes, err := stub.GetState(no)
+	if err != nil {
+		return shim.Error("query Letter of Credit fail. Number:" + no)
+	}
+	lc := LCLetter{}
+	err = json.Unmarshal(lcBytes, &lc) //unmarshal it aka JSON.parse()
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	_, userName, domain := identity(stub)
+	if !strings.EqualFold(lc.LetterOfCredit.AdvisingBank.Domain, domain) {
+		return shim.Error("Current operator domain:" + domain + " is not advising bank domain:" + lc.LetterOfCredit.AdvisingBank.Domain)
+	}
+	// t.FSM.SetCurrent(lc.
+
+	amendNo := args[1]
+	
+	// queryString := fmt.Sprintf("{\"selector\":{\"$and\":[{\"no\":\"%s\"},{\"AmendForm.AmendNo\":\"%s\"}]}}", no, amendNo)
+	// queryResults, err := getQueryResultForQueryString(stub, queryString)
+	// if err != nil {
+	// 	return shim.Error(err.Error())
+	// }
+
+	// amend := AmendForm{}
+	// err = json.Unmarshal(lcBytes, &amend) //unmarshal it aka JSON.parse()
+	// if err != nil {
+	// 	return shim.Error(err.Error())
+	// }
+
+	opinionString := args[2]
+	choice, err := strconv.ParseBool(args[3])
+	if err != nil {
+		return shim.Error("3rd arguments must be bool")
+	}	
+	
+    for i := 0; i < len(lc.AmendFormFlow); i++{
+		if amendNo == strconv.Itoa(lc.AmendFormFlow[i].AmendNo){
+			if choice {
+				lc.AmendFormFlow[i].Status = AmendStepText[AmendAdvisingBankAcceptStep]	
+				amendFormTransProgress := AmendFormProgress{userName, domain, time.Now(), opinionString, Approve, AmendStepText[AmendAdvisingBankAcceptStep]}
+				lc.AmendFormFlow[i].AmendFormProgressFlow = append(lc.AmendFormFlow[i].AmendFormProgressFlow, amendFormTransProgress)		
+			} else {
+				lc.AmendFormFlow[i].Status = AmendStepText[AmendEnd]
+				amendFormTransProgress := AmendFormProgress{userName, domain, time.Now(), opinionString, Approve, AmendStepText[AmendAdvisingBankRejectStep]}
+				lc.AmendFormFlow[i].AmendFormProgressFlow = append(lc.AmendFormFlow[i].AmendFormProgressFlow, amendFormTransProgress)
+			}
+			break;
+		}
+	}
+
+	jsonB, _ := json.Marshal(lc)
+	err = stub.PutState(no, jsonB) //rewrite the lc
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	return shim.Success(nil)
+}
+
+
+/**
+	Role：受益人
+	OP:发起修改同意或拒绝
+	Status：发起修改
+	Description：申请人提交发起修改，通知行操作（开证行同意后到通知行）
+	Return:
+ */
+ func (t *SimpleChaincode) beneficiaryLetterOfAmend(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+
+	if len(args) != 4 {
+		return shim.Error("Incorrect number of arguments. Expecting 4. no opinion approveOrReject beneficiaryLetterOfAmend")
+	}
+	no := args[0]
+	lcBytes, err := stub.GetState(no)
+	if err != nil {
+		return shim.Error("query Letter of Credit fail. Number:" + no)
+	}
+	lc := LCLetter{}
+	err = json.Unmarshal(lcBytes, &lc) //unmarshal it aka JSON.parse()
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	_, userName, domain := identity(stub)
+	if !strings.EqualFold(lc.LetterOfCredit.Beneficiary.Domain, domain) {
+		return shim.Error("Current operator domain:" + domain + " is not lc beneficiary domain:" + lc.LetterOfCredit.Beneficiary.Domain)
+	}
+	// t.FSM.SetCurrent(lc.
+
+	amendNo := args[1]
+	
+	// queryString := fmt.Sprintf("{\"selector\":{\"$and\":[{\"no\":\"%s\"},{\"AmendForm.AmendNo\":\"%s\"}]}}", no, amendNo)
+	// queryResults, err := getQueryResultForQueryString(stub, queryString)
+	// if err != nil {
+	// 	return shim.Error(err.Error())
+	// }
+
+	// amend := AmendForm{}
+	// err = json.Unmarshal(lcBytes, &amend) //unmarshal it aka JSON.parse()
+	// if err != nil {
+	// 	return shim.Error(err.Error())
+	// }
+
+	opinionString := args[2]
+	choice, err := strconv.ParseBool(args[3])
+	if err != nil {
+		return shim.Error("3rd arguments must be bool")
+	}	
+	
+    for i := 0; i < len(lc.AmendFormFlow); i++{
+		if amendNo == strconv.Itoa(lc.AmendFormFlow[i].AmendNo){
+			if choice {
+				lc.AmendFormFlow[i].Status = AmendStepText[AmendBeneficiaryAcceptStep]	
+				amendFormTransProgress := AmendFormProgress{userName, domain, time.Now(), opinionString, Approve, AmendStepText[AmendBeneficiaryAcceptStep]}
+				lc.AmendFormFlow[i].AmendFormProgressFlow = append(lc.AmendFormFlow[i].AmendFormProgressFlow, amendFormTransProgress)
+				
+				//更新正本信息
+				// expireDate,_:= time.Parse("2018-08-07T04:56:07.000+00:00", lc.AmendFormFlow[i].AmendExpiryDate)				
+				lc.AmendTimes = lc.AmendFormFlow[i].AmendTimes
+
+				lc.LetterOfCredit.Currency = lc.AmendFormFlow[i].AmendedCurrency
+				lc.ApplicationForm.Currency = lc.AmendFormFlow[i].AmendedCurrency
+
+				lc.LetterOfCredit.Amount = lc.AmendFormFlow[i].AmendedAmt
+				lc.ApplicationForm.Amount = lc.AmendFormFlow[i].AmendedAmt
+
+				lc.LetterOfCredit.DocDelay = lc.LetterOfCredit.DocDelay + lc.AmendFormFlow[i].AddedDays
+				lc.ApplicationForm.DocDelay = lc.ApplicationForm.DocDelay + lc.AmendFormFlow[i].AddedDays
+
+				lc.LetterOfCredit.ExpiryDate = lc.AmendFormFlow[i].AmendExpiryDate
+				lc.ApplicationForm.ExpiryDate = lc.AmendFormFlow[i].AmendExpiryDate
+
+				lc.LetterOfCredit.GoodsInfo.ShippingPlace = lc.AmendFormFlow[i].TransPortName
+				lc.ApplicationForm.GoodsInfo.ShippingPlace = lc.AmendFormFlow[i].TransPortName
+
+			
+				//   lc.LCTransDeposit.DepositAmount = lc.LCTransDeposit.DepositAmount + lc.AmendFormFlow[i].AddedDepositAmt		
+				lc.LetterOfCredit.EnsureAmount = lc.LetterOfCredit.EnsureAmount + lc.AmendFormFlow[i].AddedDepositAmt
+				lc.ApplicationForm.EnsureAmount = lc.ApplicationForm.EnsureAmount + lc.AmendFormFlow[i].AddedDepositAmt
+			} else {
+				lc.AmendFormFlow[i].Status = AmendStepText[AmendEnd]
+				amendFormTransProgress := AmendFormProgress{userName, domain, time.Now(), opinionString, Approve, AmendStepText[AmendBeneficiaryRejectStep]}
+				lc.AmendFormFlow[i].AmendFormProgressFlow = append(lc.AmendFormFlow[i].AmendFormProgressFlow, amendFormTransProgress)
+			}
+			break;
+		}
+	}
+
+	jsonB, _ := json.Marshal(lc)
+	err = stub.PutState(no, jsonB) //rewrite the lc
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	return shim.Success(nil)
+}
+
 
 /**
 	Role：开证行、通知行
