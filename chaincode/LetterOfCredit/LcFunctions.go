@@ -90,7 +90,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.beneficiaryReceiveLCNotice(stub, args)
 	} else if function == "handOverBills" {
 		return t.handOverBills(stub, args)
-	} else if function == "" {
+	} else if function == "appliantCheckBills" {
         return t.appliantCheckBills(stub, args)
 	} else if function == "lcAmendSubmit" {
 		return t.lcAmendSubmit(stub, args)
@@ -970,8 +970,8 @@ func (t *SimpleChaincode) appliantCheckBills(stub shim.ChaincodeStubInterface, a
 		return shim.Error(err.Error())
 	}
 	_, userName, domain := identity(stub)
-	if !strings.EqualFold(lc.LetterOfCredit.Beneficiary.Domain, domain) {
-		return shim.Error("Current operator domain:" + domain + " is not lc beneficiary domain:" + lc.LetterOfCredit.Beneficiary.Domain)
+	if !strings.EqualFold(lc.LetterOfCredit.Applicant.Domain, domain) {
+		return shim.Error("Current operator domain:" + domain + " is not lc Applicant domain:" + lc.LetterOfCredit.Applicant.Domain)
 	}
 
 	// 申请人审单结果
@@ -1438,8 +1438,8 @@ func (t *SimpleChaincode) reviewBills(stub shim.ChaincodeStubInterface, args []s
 		return shim.Error(err.Error())
 	}
 	_, userName, domain := identity(stub)
-	if !strings.EqualFold(lc.LetterOfCredit.AdvisingBank.Domain, domain) {
-		return shim.Error("Current operator domain:" + domain + " is not lc advising domain:" + lc.LetterOfCredit.AdvisingBank.Domain)
+	if !strings.EqualFold(lc.LetterOfCredit.IssuingBank.Domain, domain) {
+		return shim.Error("Current operator domain:" + domain + " is not lc IssuingBank domain:" + lc.LetterOfCredit.IssuingBank.Domain)
 	}
 	billNo := args[1]
 	opinionString := args[2]
@@ -1464,7 +1464,7 @@ func (t *SimpleChaincode) reviewBills(stub shim.ChaincodeStubInterface, args []s
 		}
 		operation = Overrule
 		handleStep = HandOverBillStep[IssuingBankRejectStep]
-		lc.Owner = lc.LetterOfCredit.Beneficiary.LegalEntity
+		lc.Owner = lc.LetterOfCredit.IssuingBank.LegalEntity
 	}
 	// 设置交单状态变化，记录在交单子结构中
 	for i := 0; i < len(lc.LCTransDocsReceive); i++ {
@@ -1514,12 +1514,12 @@ func (t *SimpleChaincode) lcAcceptOrReject(stub shim.ChaincodeStubInterface, arg
 	billNo := args[1]
 	acceptAmount, err := strconv.ParseFloat(args[2], 64)
 	if err != nil {
-		return shim.Error("1st argument must be a numeric string")
+		return shim.Error("2st argument must be a numeric string")
 	}
 	opinionString := args[3]
 	choice, err := strconv.ParseBool(args[4])
 	if err != nil {
-		return shim.Error("2nd arguments must be bool")
+		return shim.Error("3nd arguments must be bool")
 	}
 	var operation int
 	var handleStep string
@@ -1541,7 +1541,7 @@ func (t *SimpleChaincode) lcAcceptOrReject(stub shim.ChaincodeStubInterface, arg
 		operation = Overrule
 		handleStep = HandOverBillStep[IssuingBankRejectStep]
 		curStep = HandOverBillStep[IssuingBankRejectStep]
-		lc.Owner = lc.LetterOfCredit.Beneficiary.LegalEntity
+		lc.Owner = lc.LetterOfCredit.IssuingBank.LegalEntity
 	}
 	// 设置交单状态变化，记录在交单子结构中
 	for i := 0; i < len(lc.LCTransDocsReceive); i++ {
