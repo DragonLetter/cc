@@ -43,6 +43,13 @@ const (
 	IssuingBankReviewRetireBillsStep
 	IssuingBankCloseLCStep
 	LCEnd
+	BeneficiaryHandOverBillsStep // 受益人交单，初始状态
+	IssuingBankCheckBillStep   // 开证行审单
+	ApplicantAcceptOrRejectStep   // 申请人接受或拒绝审单结果
+	IssuingBankAcceptanceStep   // 开证行承兑
+	ApplicantRejectStep    // 申请人拒付，结束状态
+	IssuingBankRejectStep    // 开证行拒付，结束状态
+	HandoverBillSuccStep   // 交单成功，结束状态
 )
 
 var LCStepText  = map[int] string{
