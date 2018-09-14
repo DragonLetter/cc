@@ -329,7 +329,7 @@ type TransProgress struct {
 
 //交单
 type LCTransDocsReceive struct{
-	No int `json:"No,string,omitempty"`
+	No string
 	ReceivedAmount float64 `json:"ReceivedAmount,string,omitempty"`
 	ReceivedDate time.Time `json:"ReceivedDate,string,omitempty"`
 	BillOfLandings []BillOfLanding

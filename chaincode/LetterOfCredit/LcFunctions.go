@@ -925,7 +925,7 @@ func (t *SimpleChaincode) handOverBills(stub shim.ChaincodeStubInterface, args [
 	if err != nil {
 		return shim.Error(err.Error())
 	}
-	lCTransDocsReceive.No = billLen + 1
+	lCTransDocsReceive.No = strconv.Itoa(billLen + 1)
 	lCTransDocsReceive.ReceivedDate = time.Now()
 	lCTransDocsReceive.BillOfLadingDocs = BillOfLadingDocs
 
@@ -995,7 +995,7 @@ func (t *SimpleChaincode) appliantCheckBills(stub shim.ChaincodeStubInterface, a
 
 	// 设置交单状态变化，记录在交单子结构中
 	for i := 0; i < len(lc.LCTransDocsReceive); i++ {
-		if strconv.Itoa(lc.LCTransDocsReceive[i].No) == billNo {
+		if lc.LCTransDocsReceive[i].No == billNo {
 			lc.LCTransDocsReceive[i].HandOverBillStep = handleStep
 			lc.LCTransDocsReceive[i].Discrepancy = opinionString
 			transProgress := &TransProgress{userName, domain, time.Now(), opinionString, operation, HandOverBillStep[ApplicantAcceptOrRejectStep]}
@@ -1468,7 +1468,7 @@ func (t *SimpleChaincode) reviewBills(stub shim.ChaincodeStubInterface, args []s
 	}
 	// 设置交单状态变化，记录在交单子结构中
 	for i := 0; i < len(lc.LCTransDocsReceive); i++ {
-		if strconv.Itoa(lc.LCTransDocsReceive[i].No) == billNo {
+		if lc.LCTransDocsReceive[i].No == billNo {
 			lc.LCTransDocsReceive[i].Discrepancy = opinionString
         	lc.LCTransDocsReceive[i].HandOverBillStep = curStep
 	        transProgress := &TransProgress{userName, domain, time.Now(), opinionString, operation, handleStep}
@@ -1545,7 +1545,7 @@ func (t *SimpleChaincode) lcAcceptOrReject(stub shim.ChaincodeStubInterface, arg
 	}
 	// 设置交单状态变化，记录在交单子结构中
 	for i := 0; i < len(lc.LCTransDocsReceive); i++ {
-		if strconv.Itoa(lc.LCTransDocsReceive[i].No) == billNo {
+		if lc.LCTransDocsReceive[i].No == billNo {
         	lc.LCTransDocsReceive[i].HandOverBillStep = curStep
 	        transProgress := &TransProgress{userName, domain, time.Now(), opinionString, operation, handleStep}
 			lc.LCTransDocsReceive[i].TransProgressFlow = append(lc.LCTransDocsReceive[i].TransProgressFlow, *transProgress)
