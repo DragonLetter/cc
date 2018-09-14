@@ -1052,7 +1052,7 @@ func (t *SimpleChaincode) appliantCheckBills(stub shim.ChaincodeStubInterface, a
 	var amendFormTransFlow []AmendFormProgress
 
 	amendFormTransProgress := AmendFormProgress{userName, domain, time.Now(), "申请人提交发起修改申请", Approve, AmendStepText[AmendApplicantSubmitStep]}
-	amendForm := AmendForm{lc.AmendNum, amendFormData.AmendTimes, amendFormData.AmendedCurrency, amendFormData.AmendedAmt, amendFormData.AddedDays, amendFormData.AmendExpiryDate, amendFormData.TransPortName, amendFormData.AddedDepositAmt, AmendStepText[AmendApplicantSubmitStep], amendFormTransFlow }
+	amendForm := AmendForm{lc.AmendNum, amendFormData.AmendTimes, amendFormData.AmendedCurrency, amendFormData.AmendedAmt, amendFormData.AddedDays, amendFormData.AmendExpiryDate, amendFormData.TransPortName, amendFormData.AddedDepositAmt, AmendStepText[AmendIssuingBankAcceptStep], amendFormTransFlow }
 	amendForm.AmendFormProgressFlow = append(amendForm.AmendFormProgressFlow, amendFormTransProgress)
 
 	lc.AmendFormFlow = append(lc.AmendFormFlow, amendForm)
@@ -1123,7 +1123,7 @@ func (t *SimpleChaincode) appliantCheckBills(stub shim.ChaincodeStubInterface, a
     for i := 0; i < len(lc.AmendFormFlow); i++{
 		if amendNo == strconv.Itoa(lc.AmendFormFlow[i].AmendNo){
 			if choice {
-				lc.AmendFormFlow[i].Status = AmendStepText[AmendIssuingBankAcceptStep]	
+				lc.AmendFormFlow[i].Status = AmendStepText[AmendAdvisingBankAcceptStep]	
 				amendFormTransProgress := AmendFormProgress{userName, domain, time.Now(), opinionString, Approve, AmendStepText[AmendApplicantSubmitStep]}
 				lc.AmendFormFlow[i].AmendFormProgressFlow = append(lc.AmendFormFlow[i].AmendFormProgressFlow, amendFormTransProgress)		
 			} else {
@@ -1194,7 +1194,7 @@ func (t *SimpleChaincode) appliantCheckBills(stub shim.ChaincodeStubInterface, a
     for i := 0; i < len(lc.AmendFormFlow); i++{
 		if amendNo == strconv.Itoa(lc.AmendFormFlow[i].AmendNo){
 			if choice {
-				lc.AmendFormFlow[i].Status = AmendStepText[AmendAdvisingBankAcceptStep]	
+				lc.AmendFormFlow[i].Status = AmendStepText[AmendBeneficiaryAcceptStep]	
 				amendFormTransProgress := AmendFormProgress{userName, domain, time.Now(), opinionString, Approve, AmendStepText[AmendAdvisingBankAcceptStep]}
 				lc.AmendFormFlow[i].AmendFormProgressFlow = append(lc.AmendFormFlow[i].AmendFormProgressFlow, amendFormTransProgress)		
 			} else {
@@ -1266,7 +1266,7 @@ func (t *SimpleChaincode) appliantCheckBills(stub shim.ChaincodeStubInterface, a
     for i := 0; i < len(lc.AmendFormFlow); i++{
 		if amendNo == strconv.Itoa(lc.AmendFormFlow[i].AmendNo){
 			if choice {
-				lc.AmendFormFlow[i].Status = AmendStepText[AmendBeneficiaryAcceptStep]	
+				lc.AmendFormFlow[i].Status = AmendStepText[AmendEnd]	
 				amendFormTransProgress := AmendFormProgress{userName, domain, time.Now(), opinionString, Approve, AmendStepText[AmendBeneficiaryAcceptStep]}
 				lc.AmendFormFlow[i].AmendFormProgressFlow = append(lc.AmendFormFlow[i].AmendFormProgressFlow, amendFormTransProgress)
 				
