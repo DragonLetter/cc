@@ -1594,27 +1594,25 @@ func (t *SimpleChaincode) retireShippingBills(stub shim.ChaincodeStubInterface, 
 	if err != nil {
 		return shim.Error("1st argument must be a numeric string")
 	}
-	//if isEqual(payment, lc.AcceptAmount){
-		//是否已支付为是，状态为付款赎单状态，货运单拥有者为信用证申请企业
-		lc.IsApplicantPaid = true
-		lc.LcStatus = RetireBills
-		transProgress := &TransProgress{userName, domain, time.Now(), "", Approve, lc.CurrentStep}
-		lc.TransProgressFlow = append(lc.TransProgressFlow, *transProgress)
-		err = t.FSM.Event("applicantRetireBills") //触发状态机的事件，付款赎单
-		if err != nil {
-			return shim.Error(err.Error())
-		}
-		lc.CurrentStep = t.FSM.Current()
 
-		jsonB, _ := json.Marshal(lc)
-		err = stub.PutState(no, jsonB) //rewrite the lc
-		if err != nil {
-			return shim.Error(err.Error())
-		}
-		return shim.Success(nil)
-	// } else {
-	// 	return shim.Error("Retire the Documents failed! applicant must pay accept amount:" + strconv.FormatFloat(lc.AcceptAmount, 'f', -1, 64))
-	// }
+	//是否已支付为是，状态为付款赎单状态，货运单拥有者为信用证申请企业
+	lc.IsApplicantPaid = true
+	lc.ApplicantPaidAmount = payment
+	lc.LcStatus = RetireBills
+	transProgress := &TransProgress{userName, domain, time.Now(), "", Approve, lc.CurrentStep}
+	lc.TransProgressFlow = append(lc.TransProgressFlow, *transProgress)
+	err = t.FSM.Event("applicantRetireBills") //触发状态机的事件，付款赎单
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	lc.CurrentStep = t.FSM.Current()
+
+	jsonB, _ := json.Marshal(lc)
+	err = stub.PutState(no, jsonB) //rewrite the lc
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	return shim.Success(nil)
 }
 
 /**

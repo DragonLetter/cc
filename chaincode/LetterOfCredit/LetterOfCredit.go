@@ -139,6 +139,8 @@ type LCLetter struct {
 	ABTimes int64
 	//申请人是否已经付款
 	IsApplicantPaid bool `json:"isApplyCorpPaid,string,omitempty"`
+	//申请人付款金额
+	ApplicantPaidAmount float64
 	//是否有效
 	IsValid bool
 	//是否闭卷
