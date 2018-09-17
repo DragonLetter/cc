@@ -867,7 +867,7 @@ func (t *SimpleChaincode) beneficiaryReceiveLCNotice(stub shim.ChaincodeStubInte
 			return shim.Error(err.Error())
 		}
 		operation = Overrule
-		lc.LcStatus = OriginalModify
+		lc.LcStatus = Original
 	}
 	transProgress := &TransProgress{userName, domain, time.Now(), opinionString, operation, lc.CurrentStep}
 	lc.TransProgressFlow = append(lc.TransProgressFlow, *transProgress)
@@ -1124,7 +1124,7 @@ func (t *SimpleChaincode) appliantCheckBills(stub shim.ChaincodeStubInterface, a
 		if amendNo == strconv.Itoa(lc.AmendFormFlow[i].AmendNo){
 			if choice {
 				lc.AmendFormFlow[i].Status = AmendStepText[AmendAdvisingBankAcceptStep]	
-				amendFormTransProgress := AmendFormProgress{userName, domain, time.Now(), opinionString, Approve, AmendStepText[AmendApplicantSubmitStep]}
+				amendFormTransProgress := AmendFormProgress{userName, domain, time.Now(), opinionString, Approve, AmendStepText[AmendIssuingBankAcceptStep]}
 				lc.AmendFormFlow[i].AmendFormProgressFlow = append(lc.AmendFormFlow[i].AmendFormProgressFlow, amendFormTransProgress)		
 			} else {
 				lc.AmendFormFlow[i].Status = AmendStepText[AmendEnd]
@@ -1343,9 +1343,9 @@ func (t *SimpleChaincode) lcAmendConfirm(stub shim.ChaincodeStubInterface, args 
 	t.FSM.SetCurrent(lc.CurrentStep)
 
 	//上一个状态必须是正本修改状态，才能执行会签操作
-	if !(lc.LcStatus == OriginalModify) {
-		return shim.Error(no + "LC's Last Status is not originalModify state, can not counter sign")
-	}
+	// if !(lc.LcStatus == OriginalModify) {
+	// 	return shim.Error(no + "LC's Last Status is not originalModify state, can not counter sign")
+	// }
 	opinionString := args[1]
 	choice, err := strconv.ParseBool(args[2])
 	if err != nil {
@@ -1366,7 +1366,7 @@ func (t *SimpleChaincode) lcAmendConfirm(stub shim.ChaincodeStubInterface, args 
 			if err != nil {
 				return shim.Error(err.Error())
 			}
-			lc.LcStatus = Original
+			// lc.LcStatus = Original
 			lc.CurrentStep = t.FSM.Current()
 
 			jsonB, _ := json.Marshal(lc)
@@ -1392,7 +1392,7 @@ func (t *SimpleChaincode) lcAmendConfirm(stub shim.ChaincodeStubInterface, args 
 		operation = Overrule
 		transProgress := &TransProgress{userName, domain, time.Now(), opinionString, operation, lc.CurrentStep}
 		lc.TransProgressFlow = append(lc.TransProgressFlow, *transProgress)
-		lc.LcStatus = OriginalModify
+		// lc.LcStatus = OriginalModify
 		lc.CurrentStep = t.FSM.Current()
 
 		jsonB, _ := json.Marshal(lc)
@@ -1587,8 +1587,8 @@ func (t *SimpleChaincode) retireShippingBills(stub shim.ChaincodeStubInterface, 
 	}
 	t.FSM.SetCurrent(lc.CurrentStep)
 
-	if lc.LcStatus != Accept {
-		return shim.Error("lc status must be Accepted. LCNumber:" + no)
+	if lc.LcStatus != Effective {
+		return shim.Error("lc status must be Effective. LCNumber:" + no)
 	}
 	payment, err := strconv.ParseFloat(args[1], 64)
 	if err != nil {
