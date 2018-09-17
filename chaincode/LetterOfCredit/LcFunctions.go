@@ -1,5 +1,6 @@
 package main
 
+// 引入必要的依赖包
 import (
 	"bytes"
 	"fmt"
@@ -15,10 +16,12 @@ import (
 	"github.com/looplab/fsm"
 )
 
+// 声明一个结构体
 type SimpleChaincode struct {
 	FSM *fsm.FSM
 }
 
+// 主函数，需要调用shim.Start()方法
 func main() {
 	t := new(SimpleChaincode)
 	t.FSM = InitFSM(LCStepText[LCStart])
@@ -28,6 +31,7 @@ func main() {
 	}
 }
 
+// 为SimpleChaincode结构体添加Init方法，该方法实现链码初始化或升级时的处理逻辑
 // Init initializes chaincode
 // ===========================
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
@@ -35,6 +39,7 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 	return shim.Success(nil)
 }
 
+// 为SimpleChaincode结构体添加Invoke方法，该方法实现链码运行中被调用或查询时的处理逻辑
 // Invoke - Our entry point for Invocations
 // ========================================
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
@@ -85,6 +90,8 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.beneficiaryReceiveLCNotice(stub, args)
 	} else if function == "handOverBills" {
 		return t.handOverBills(stub, args)
+	} else if function == "appliantCheckBills" {
+        return t.appliantCheckBills(stub, args)
 	} else if function == "lcAmendSubmit" {
 		return t.lcAmendSubmit(stub, args)
 	} else if function == "lcAmendConfirm" {
@@ -114,8 +121,6 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	} else if function == "beneficiaryLetterOfAmend" {
 		return t.beneficiaryLetterOfAmend(stub, args)
 	}
-
-	
 
 	fmt.Println("invoke did not find func: " + function) //error
 	return shim.Error("Received unknown function invocation")
@@ -361,6 +366,7 @@ func InitFSM(initStatus string) *fsm.FSM {
 		initStatus,
 		fsm.Events{
 			{Name: "applicantSaveLCApplication", Src: []string{LCStepText[LCStart]}, Dst: LCStepText[ApplicantSaveLCApplyFormStep]},
+
 			{Name: "applicantSubmitLCApplication", Src: []string{LCStepText[ApplicantSaveLCApplyFormStep]}, Dst: LCStepText[BankConfirmApplyFormStep]},
 
 			{Name: "issuingBankApproveApplicantSubmitLCApplication", Src: []string{LCStepText[BankConfirmApplyFormStep]}, Dst: LCStepText[ApplicantFillLCDraftStep]},
@@ -374,7 +380,7 @@ func InitFSM(initStatus string) *fsm.FSM {
 			{Name: "advisingBankApproveLCNotice", Src: []string{LCStepText[AdvisingBankReceiveLCNoticeStep]}, Dst: LCStepText[BeneficiaryReceiveLCStep]},
 			{Name: "advisingBankRejectLCNotice", Src: []string{LCStepText[AdvisingBankReceiveLCNoticeStep]}, Dst: LCStepText[BankIssueLCStep]},
 
-			{Name: "beneficiaryApproveLC", Src: []string{LCStepText[BeneficiaryReceiveLCStep]}, Dst: LCStepText[BeneficiaryHandOverBillsStep]},
+			{Name: "beneficiaryApproveLC", Src: []string{LCStepText[BeneficiaryReceiveLCStep]}, Dst: LCStepText[ApplicantRetireBillsStep]},
 			{Name: "beneficiaryRejectLC", Src: []string{LCStepText[BeneficiaryReceiveLCStep]}, Dst: LCStepText[ApplicantLCAmendStep]},
 
 			{Name: "applicantSubmitLCAmend", Src: []string{LCStepText[ApplicantLCAmendStep]}, Dst: LCStepText[MultiPartyCountersignStep]},
@@ -382,13 +388,13 @@ func InitFSM(initStatus string) *fsm.FSM {
 			{Name: "MultiPartyCountersignApprove", Src: []string{LCStepText[MultiPartyCountersignStep]}, Dst: LCStepText[BeneficiaryReceiveLCStep]},
 			{Name: "MultiPartyCountersignReject", Src: []string{LCStepText[MultiPartyCountersignStep]}, Dst: LCStepText[ApplicantLCAmendStep]},
 
-			{Name: "beneficiaryHandOverBills", Src: []string{LCStepText[BeneficiaryHandOverBillsStep]}, Dst: LCStepText[AdvisingBankReviewBillsStep]},
+			// {Name: "beneficiaryHandOverBills", Src: []string{LCStepText[BeneficiaryHandOverBillsStep]}, Dst: LCStepText[AdvisingBankReviewBillsStep]},
 
-			{Name: "advisingBankApproveBills", Src: []string{LCStepText[AdvisingBankReviewBillsStep]}, Dst: LCStepText[IssuingBankAcceptOrRejectStep]},
-			{Name: "advisingBankRejectBills", Src: []string{LCStepText[AdvisingBankReviewBillsStep]}, Dst: LCStepText[BeneficiaryHandOverBillsStep]},
+			// {Name: "advisingBankApproveBills", Src: []string{LCStepText[AdvisingBankReviewBillsStep]}, Dst: LCStepText[IssuingBankAcceptOrRejectStep]},
+			// {Name: "advisingBankRejectBills", Src: []string{LCStepText[AdvisingBankReviewBillsStep]}, Dst: LCStepText[BeneficiaryHandOverBillsStep]},
 
-			{Name: "issuingBankAccept", Src: []string{LCStepText[IssuingBankAcceptOrRejectStep]}, Dst: LCStepText[ApplicantRetireBillsStep]},
-			{Name: "issuingBankReject", Src: []string{LCStepText[IssuingBankAcceptOrRejectStep]}, Dst: LCStepText[AdvisingBankReviewBillsStep]},
+			// {Name: "issuingBankAccept", Src: []string{LCStepText[IssuingBankAcceptOrRejectStep]}, Dst: LCStepText[ApplicantRetireBillsStep]},
+			// {Name: "issuingBankReject", Src: []string{LCStepText[IssuingBankAcceptOrRejectStep]}, Dst: LCStepText[AdvisingBankReviewBillsStep]},
 
 			{Name: "applicantRetireBills", Src: []string{LCStepText[ApplicantRetireBillsStep]}, Dst: LCStepText[IssuingBankReviewRetireBillsStep]},
 
@@ -470,8 +476,9 @@ func (t *SimpleChaincode) saveLCApplication(stub shim.ChaincodeStubInterface, ar
 		if err != nil {
 			return shim.Error(err.Error())
 		}
-		//交单内容在填申请时为空	
-		lCTransDocsReceive, err:= decodeLCTransDocsReceive("{\"ReceivedAmount\":\"0.0\"}")
+		//交单内容在填申请时为空
+		var lcTransDocsReceive []LCTransDocsReceive
+//		lCTransDocsReceive, err:= decodeLCTransDocsReceive("{\"ReceivedAmount\":\"0.0\"}")
 		//货运单内容在填申请时为空
 		//billOfLanding, err := decodeBillOfLanding("{\"GoodsNo\":\"\",\"GoodsDesc\":\"\",\"LoadPortName\":\"\",\"TransPortName\":\"\",\"LatestShipDate\":\"\",\"PartialShipment\":\"false\",\"TrackingNo\":\"\",\"Carrier\":{\"No\":\"\",\"Name\":\"\",\"Domain\":\"\"},\"ShippingTime\":\"\",\"Owner\":{\"NO\":\"\",\"Name\":\"\",\"Domain\":\"\"}}")
 		if err != nil {
@@ -484,7 +491,7 @@ func (t *SimpleChaincode) saveLCApplication(stub shim.ChaincodeStubInterface, ar
 
 		//申请人填写申请表时，此时还没有信用证号，执行保存操作
 
-		lc = &LCLetter{no, "", applicationForm, letterOfCredit, lCTransDocsReceive, lcTransDeposit, acceptAmount, nopayAmount, acceptDate, int64(amendTimes), int64(aBTimes), false, isValid, isClose, isCancel, lcStatus, countersign, []string{}, owner, transProgressFlow, "", amendFormFlow, 0}
+		lc = &LCLetter{no, "", applicationForm, letterOfCredit, lcTransDocsReceive, lcTransDeposit, acceptAmount, nopayAmount, acceptDate, int64(amendTimes), int64(aBTimes), false, isValid, isClose, isCancel, lcStatus, countersign, []string{}, owner, transProgressFlow, "", amendFormFlow, 0}
 
 	} else { // 链上已经存在该LC信息
 		err = json.Unmarshal(lcAsBytes, &lc) //unmarshal it aka JSON.parse()
@@ -860,7 +867,7 @@ func (t *SimpleChaincode) beneficiaryReceiveLCNotice(stub shim.ChaincodeStubInte
 			return shim.Error(err.Error())
 		}
 		operation = Overrule
-		lc.LcStatus = OriginalModify
+		lc.LcStatus = Original
 	}
 	transProgress := &TransProgress{userName, domain, time.Now(), opinionString, operation, lc.CurrentStep}
 	lc.TransProgressFlow = append(lc.TransProgressFlow, *transProgress)
@@ -898,15 +905,18 @@ func (t *SimpleChaincode) handOverBills(stub shim.ChaincodeStubInterface, args [
 	if !strings.EqualFold(lc.LetterOfCredit.Beneficiary.Domain, domain) {
 		return shim.Error("Current operator domain:" + domain + " is not lc beneficiary domain:" + lc.LetterOfCredit.Beneficiary.Domain)
 	}
-	t.FSM.SetCurrent(lc.CurrentStep)
 
-	err = t.FSM.Event("beneficiaryHandOverBills") //触发状态机的事件
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	transProgress := &TransProgress{userName, domain, time.Now(), "受益人执行交单", Approve, lc.CurrentStep}
-	lc.TransProgressFlow = append(lc.TransProgressFlow, *transProgress)
-	//交单信息
+	// t.FSM.SetCurrent(lc.CurrentStep)
+	// err = t.FSM.Event("beneficiaryHandOverBills") //触发状态机的事件
+	// if err != nil {
+	// 	return shim.Error(err.Error())
+	// }
+	// transProgress := &TransProgress{userName, domain, time.Now(), "受益人执行交单", Approve, lc.CurrentStep}
+	// lc.TransProgressFlow = append(lc.TransProgressFlow, *transProgress)
+
+	// 交单信息
+	// 获取已有的交单的数量
+	var billLen int = len(lc.LCTransDocsReceive)
 	lCTransDocsReceive, err := decodeLCTransDocsReceive(args[1])
 	if err != nil {
 		return shim.Error(err.Error())
@@ -915,16 +925,87 @@ func (t *SimpleChaincode) handOverBills(stub shim.ChaincodeStubInterface, args [
 	if err != nil {
 		return shim.Error(err.Error())
 	}
+	lCTransDocsReceive.No = strconv.Itoa(billLen + 1)
 	lCTransDocsReceive.ReceivedDate = time.Now()
 	lCTransDocsReceive.BillOfLadingDocs = BillOfLadingDocs
-	lc.LCTransDocsReceive = lCTransDocsReceive
+
+	// 设置受益人交单状态变化，记录在交单子结构中
+	lCTransDocsReceive.HandOverBillStep = HandOverBillStep[IssuingBankCheckBillStep]
+    transProgress := &TransProgress{userName, domain, time.Now(), "受益人执行交单", Approve, HandOverBillStep[BeneficiaryHandOverBillsStep]}
+    lCTransDocsReceive.TransProgressFlow = append(lCTransDocsReceive.TransProgressFlow, *transProgress)
+	
+	lc.LCTransDocsReceive = append(lc.LCTransDocsReceive, lCTransDocsReceive)
 
 	lc.Owner = lc.LetterOfCredit.IssuingBank.LegalEntity
-	lc.LcStatus = HandOverBill
-	lc.CurrentStep = t.FSM.Current()
+	// lc.LcStatus = HandOverBill
+	// lc.CurrentStep = t.FSM.Current()
 
 	jsonB, _ := json.Marshal(lc)
 	err = stub.PutState(no, jsonB) //rewrite the lc
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	return shim.Success(nil)
+}
+
+/**
+	Role:申请人
+	OP:申请人执行审单操作
+	Status:生效
+	Owner：申请人
+	Description：申请人执行审核受益人交单操作，根据受益人提交的单据决定是否同意开证行进行承兑
+ */
+func (t *SimpleChaincode) appliantCheckBills(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	if len(args) != 4 {
+		return shim.Error("Incorrect number of arguments. Expecting 3. no, BillOfLanding array, BillOfDoc array")
+	}
+	lcNo := args[0]
+	lcBytes, err := stub.GetState(lcNo)
+	if err != nil {
+		return shim.Error("query Letter of Credit fail. Number:" + lcNo)
+	}
+	lc := LCLetter{}
+	err = json.Unmarshal(lcBytes, &lc) //unmarshal it aka JSON.parse()
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	_, userName, domain := identity(stub)
+	if !strings.EqualFold(lc.LetterOfCredit.Applicant.Domain, domain) {
+		return shim.Error("Current operator domain:" + domain + " is not lc Applicant domain:" + lc.LetterOfCredit.Applicant.Domain)
+	}
+
+	// 申请人审单结果
+	billNo := args[1]
+	opinionString := args[2]
+	choice, err := strconv.ParseBool(args[3])
+	if err != nil {
+		return shim.Error("2nd arguments must be bool")
+	}
+	var operation int
+	var handleStep string
+	if choice {
+		operation = Approve
+		handleStep = HandOverBillStep[IssuingBankAcceptanceStep]
+		lc.Owner = lc.LetterOfCredit.IssuingBank.LegalEntity
+	} else {
+		operation = Overrule
+		handleStep = HandOverBillStep[ApplicantRejectStep]
+		lc.Owner = lc.LetterOfCredit.Beneficiary.LegalEntity
+	}
+
+	// 设置交单状态变化，记录在交单子结构中
+	for i := 0; i < len(lc.LCTransDocsReceive); i++ {
+		if lc.LCTransDocsReceive[i].No == billNo {
+			lc.LCTransDocsReceive[i].HandOverBillStep = handleStep
+			lc.LCTransDocsReceive[i].Discrepancy = opinionString
+			transProgress := &TransProgress{userName, domain, time.Now(), opinionString, operation, HandOverBillStep[ApplicantAcceptOrRejectStep]}
+			lc.LCTransDocsReceive[i].TransProgressFlow = append(lc.LCTransDocsReceive[i].TransProgressFlow, *transProgress)
+            break
+		}
+	}
+
+	jsonB, _ := json.Marshal(lc)
+	err = stub.PutState(lcNo, jsonB) //rewrite the lc
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -971,7 +1052,7 @@ func (t *SimpleChaincode) handOverBills(stub shim.ChaincodeStubInterface, args [
 	var amendFormTransFlow []AmendFormProgress
 
 	amendFormTransProgress := AmendFormProgress{userName, domain, time.Now(), "申请人提交发起修改申请", Approve, AmendStepText[AmendApplicantSubmitStep]}
-	amendForm := AmendForm{lc.AmendNum, amendFormData.AmendTimes, amendFormData.AmendedCurrency, amendFormData.AmendedAmt, amendFormData.AddedDays, amendFormData.AmendExpiryDate, amendFormData.TransPortName, amendFormData.AddedDepositAmt, AmendStepText[AmendApplicantSubmitStep], amendFormTransFlow }
+	amendForm := AmendForm{lc.AmendNum, amendFormData.AmendTimes, amendFormData.AmendedCurrency, amendFormData.AmendedAmt, amendFormData.AddedDays, amendFormData.AmendExpiryDate, amendFormData.TransPortName, amendFormData.AddedDepositAmt, AmendStepText[AmendIssuingBankAcceptStep], amendFormTransFlow, time.Now()}
 	amendForm.AmendFormProgressFlow = append(amendForm.AmendFormProgressFlow, amendFormTransProgress)
 
 	lc.AmendFormFlow = append(lc.AmendFormFlow, amendForm)
@@ -1042,8 +1123,8 @@ func (t *SimpleChaincode) handOverBills(stub shim.ChaincodeStubInterface, args [
     for i := 0; i < len(lc.AmendFormFlow); i++{
 		if amendNo == strconv.Itoa(lc.AmendFormFlow[i].AmendNo){
 			if choice {
-				lc.AmendFormFlow[i].Status = AmendStepText[AmendIssuingBankAcceptStep]	
-				amendFormTransProgress := AmendFormProgress{userName, domain, time.Now(), opinionString, Approve, AmendStepText[AmendApplicantSubmitStep]}
+				lc.AmendFormFlow[i].Status = AmendStepText[AmendAdvisingBankAcceptStep]	
+				amendFormTransProgress := AmendFormProgress{userName, domain, time.Now(), opinionString, Approve, AmendStepText[AmendIssuingBankAcceptStep]}
 				lc.AmendFormFlow[i].AmendFormProgressFlow = append(lc.AmendFormFlow[i].AmendFormProgressFlow, amendFormTransProgress)		
 			} else {
 				lc.AmendFormFlow[i].Status = AmendStepText[AmendEnd]
@@ -1113,7 +1194,7 @@ func (t *SimpleChaincode) handOverBills(stub shim.ChaincodeStubInterface, args [
     for i := 0; i < len(lc.AmendFormFlow); i++{
 		if amendNo == strconv.Itoa(lc.AmendFormFlow[i].AmendNo){
 			if choice {
-				lc.AmendFormFlow[i].Status = AmendStepText[AmendAdvisingBankAcceptStep]	
+				lc.AmendFormFlow[i].Status = AmendStepText[AmendBeneficiaryAcceptStep]	
 				amendFormTransProgress := AmendFormProgress{userName, domain, time.Now(), opinionString, Approve, AmendStepText[AmendAdvisingBankAcceptStep]}
 				lc.AmendFormFlow[i].AmendFormProgressFlow = append(lc.AmendFormFlow[i].AmendFormProgressFlow, amendFormTransProgress)		
 			} else {
@@ -1185,7 +1266,7 @@ func (t *SimpleChaincode) handOverBills(stub shim.ChaincodeStubInterface, args [
     for i := 0; i < len(lc.AmendFormFlow); i++{
 		if amendNo == strconv.Itoa(lc.AmendFormFlow[i].AmendNo){
 			if choice {
-				lc.AmendFormFlow[i].Status = AmendStepText[AmendBeneficiaryAcceptStep]	
+				lc.AmendFormFlow[i].Status = AmendStepText[AmendEnd]	
 				amendFormTransProgress := AmendFormProgress{userName, domain, time.Now(), opinionString, Approve, AmendStepText[AmendBeneficiaryAcceptStep]}
 				lc.AmendFormFlow[i].AmendFormProgressFlow = append(lc.AmendFormFlow[i].AmendFormProgressFlow, amendFormTransProgress)
 				
@@ -1229,7 +1310,6 @@ func (t *SimpleChaincode) handOverBills(stub shim.ChaincodeStubInterface, args [
 	return shim.Success(nil)
 }
 
-
 /**
 	Role：开证行、通知行
 	OP:参与方签名
@@ -1263,9 +1343,9 @@ func (t *SimpleChaincode) lcAmendConfirm(stub shim.ChaincodeStubInterface, args 
 	t.FSM.SetCurrent(lc.CurrentStep)
 
 	//上一个状态必须是正本修改状态，才能执行会签操作
-	if !(lc.LcStatus == OriginalModify) {
-		return shim.Error(no + "LC's Last Status is not originalModify state, can not counter sign")
-	}
+	// if !(lc.LcStatus == OriginalModify) {
+	// 	return shim.Error(no + "LC's Last Status is not originalModify state, can not counter sign")
+	// }
 	opinionString := args[1]
 	choice, err := strconv.ParseBool(args[2])
 	if err != nil {
@@ -1286,7 +1366,7 @@ func (t *SimpleChaincode) lcAmendConfirm(stub shim.ChaincodeStubInterface, args 
 			if err != nil {
 				return shim.Error(err.Error())
 			}
-			lc.LcStatus = Original
+			// lc.LcStatus = Original
 			lc.CurrentStep = t.FSM.Current()
 
 			jsonB, _ := json.Marshal(lc)
@@ -1312,7 +1392,7 @@ func (t *SimpleChaincode) lcAmendConfirm(stub shim.ChaincodeStubInterface, args 
 		operation = Overrule
 		transProgress := &TransProgress{userName, domain, time.Now(), opinionString, operation, lc.CurrentStep}
 		lc.TransProgressFlow = append(lc.TransProgressFlow, *transProgress)
-		lc.LcStatus = OriginalModify
+		// lc.LcStatus = OriginalModify
 		lc.CurrentStep = t.FSM.Current()
 
 		jsonB, _ := json.Marshal(lc)
@@ -1337,15 +1417,14 @@ func (t *SimpleChaincode) lcCancel(stub shim.ChaincodeStubInterface, args []stri
 	return shim.Success(nil)
 }
 
-
 /**
-	Role:通知行
+	Role:开证行
 	OP:确认受益人提交的单
 	Status:生效
-	Description：通知行审核受益人提交的单据
+	Description：开证行审核受益人提交的单据
  */
 func (t *SimpleChaincode) reviewBills(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	if len(args) != 3 {
+	if len(args) != 4 {
 		return shim.Error("Incorrect number of arguments. Expecting 3. no opinion approveOrReject")
 	}
 	no := args[0]
@@ -1359,36 +1438,45 @@ func (t *SimpleChaincode) reviewBills(stub shim.ChaincodeStubInterface, args []s
 		return shim.Error(err.Error())
 	}
 	_, userName, domain := identity(stub)
-	if !strings.EqualFold(lc.LetterOfCredit.AdvisingBank.Domain, domain) {
-		return shim.Error("Current operator domain:" + domain + " is not lc advising domain:" + lc.LetterOfCredit.AdvisingBank.Domain)
+	if !strings.EqualFold(lc.LetterOfCredit.IssuingBank.Domain, domain) {
+		return shim.Error("Current operator domain:" + domain + " is not lc IssuingBank domain:" + lc.LetterOfCredit.IssuingBank.Domain)
 	}
-	t.FSM.SetCurrent(lc.CurrentStep)
-
-	opinionString := args[1]
-	choice, err := strconv.ParseBool(args[2])
+	billNo := args[1]
+	opinionString := args[2]
+	choice, err := strconv.ParseBool(args[3])
 	if err != nil {
-		return shim.Error("2nd arguments must be bool")
+		return shim.Error("3nd arguments must be bool")
 	}
 	var operation int
+	var handleStep string
+	var curStep string
 	if choice {
-		err = t.FSM.Event("advisingBankApproveBills") //触发状态机的事件
 		if err != nil {
 			return shim.Error(err.Error())
 		}
 		operation = Approve
-		lc.Owner = lc.LetterOfCredit.Beneficiary.LegalEntity
-		lc.LcStatus = Effective
+		handleStep = HandOverBillStep[IssuingBankCheckBillStep]
+		curStep = HandOverBillStep[ApplicantAcceptOrRejectStep]
+		lc.Owner = lc.LetterOfCredit.IssuingBank.LegalEntity
 	} else {
-		err = t.FSM.Event("advisingBankRejectBills") //触发状态机的事件
 		if err != nil {
 			return shim.Error(err.Error())
 		}
 		operation = Overrule
-		lc.LcStatus = OriginalModify
+		handleStep = HandOverBillStep[IssuingBankRejectStep]
+		lc.Owner = lc.LetterOfCredit.IssuingBank.LegalEntity
 	}
-	transProgress := &TransProgress{userName, domain, time.Now(), opinionString, operation, lc.CurrentStep}
-	lc.TransProgressFlow = append(lc.TransProgressFlow, *transProgress)
-	lc.CurrentStep = t.FSM.Current()
+	// 设置交单状态变化，记录在交单子结构中
+	for i := 0; i < len(lc.LCTransDocsReceive); i++ {
+		if lc.LCTransDocsReceive[i].No == billNo {
+			lc.LCTransDocsReceive[i].Discrepancy = opinionString
+        	lc.LCTransDocsReceive[i].HandOverBillStep = curStep
+	        transProgress := &TransProgress{userName, domain, time.Now(), opinionString, operation, handleStep}
+    	    lc.LCTransDocsReceive[i].TransProgressFlow = append(lc.LCTransDocsReceive[i].TransProgressFlow, *transProgress)
+        	break
+    	}
+	}
+
 	jsonB, _ := json.Marshal(lc)
 	err = stub.PutState(no, jsonB) //rewrite the lc
 	if err != nil {
@@ -1423,58 +1511,48 @@ func (t *SimpleChaincode) lcAcceptOrReject(stub shim.ChaincodeStubInterface, arg
 	if !strings.EqualFold(lc.LetterOfCredit.IssuingBank.Domain, domain) {
 		return shim.Error("Current operator domain:" + domain + " is not issuing bank domain:" + lc.LetterOfCredit.IssuingBank.Domain)
 	}
-	t.FSM.SetCurrent(lc.CurrentStep)
-
-	acceptAmount, err := strconv.ParseFloat(args[1], 64)
+	billNo := args[1]
+	acceptAmount, err := strconv.ParseFloat(args[2], 64)
 	if err != nil {
-		return shim.Error("1st argument must be a numeric string")
+		return shim.Error("2st argument must be a numeric string")
 	}
-	lc.AcceptAmount = acceptAmount
-	lc.NotPayAmount = lc.LetterOfCredit.Amount - acceptAmount
-
-	discrepancies := strings.Split(args[2], ",")
-	discrepanciesString := args[2]
-	lc.Discrepancy = discrepancies
-
 	opinionString := args[3]
 	choice, err := strconv.ParseBool(args[4])
 	if err != nil {
-		return shim.Error("2nd arguments must be bool")
+		return shim.Error("3nd arguments must be bool")
 	}
 	var operation int
-	if choice { //承兑
-		if !isEqual(acceptAmount, lc.LetterOfCredit.Amount) {
-			return shim.Error("accept amount must be equaled to lc.Amount")
-		}
-		if !strings.EqualFold(discrepanciesString, "") {
-			return shim.Error("discrepancies must be null")
-		}
-		lc.AcceptDate = time.Now()
-		operation = Approve
-		lc.LcStatus = Accept
-
-		err = t.FSM.Event("issuingBankAccept") //触发状态机的事件，同意承兑
+	var handleStep string
+	var curStep string
+	if choice {
+		lc.AcceptAmount = lc.AcceptAmount + acceptAmount
+		lc.NotPayAmount = lc.LetterOfCredit.Amount - lc.AcceptAmount
 		if err != nil {
 			return shim.Error(err.Error())
 		}
-	} else { //拒付
-		if !isEqual(acceptAmount, 0.0) {
-			return shim.Error("accept amount must be equaled to 0.0")
-		}
-		if len(discrepancies) == 0 {
-			return shim.Error("discrepancies must not be null")
+		operation = Approve
+		handleStep = HandOverBillStep[IssuingBankAcceptanceStep]
+		curStep = HandOverBillStep[HandoverBillSuccStep]
+		lc.Owner = lc.LetterOfCredit.IssuingBank.LegalEntity
+	} else {
+		if err != nil {
+			return shim.Error(err.Error())
 		}
 		operation = Overrule
-		lc.LcStatus = HandOverBill
-		err = t.FSM.Event("issuingBankReject") //触发状态机的事件，拒付
-		if err != nil {
-			return shim.Error(err.Error())
-		}
+		handleStep = HandOverBillStep[IssuingBankRejectStep]
+		curStep = HandOverBillStep[IssuingBankRejectStep]
+		lc.Owner = lc.LetterOfCredit.IssuingBank.LegalEntity
 	}
-	transProgress := &TransProgress{userName, domain, time.Now(), opinionString, operation, lc.CurrentStep}
-	lc.TransProgressFlow = append(lc.TransProgressFlow, *transProgress)
-	lc.CurrentStep = t.FSM.Current()
-
+	// 设置交单状态变化，记录在交单子结构中
+	for i := 0; i < len(lc.LCTransDocsReceive); i++ {
+		if lc.LCTransDocsReceive[i].No == billNo {
+        	lc.LCTransDocsReceive[i].HandOverBillStep = curStep
+	        transProgress := &TransProgress{userName, domain, time.Now(), opinionString, operation, handleStep}
+			lc.LCTransDocsReceive[i].TransProgressFlow = append(lc.LCTransDocsReceive[i].TransProgressFlow, *transProgress)
+        	break
+    	}
+	}
+	
 	jsonB, _ := json.Marshal(lc)
 	err = stub.PutState(no, jsonB) //rewrite the lc
 	if err != nil {
@@ -1509,14 +1587,14 @@ func (t *SimpleChaincode) retireShippingBills(stub shim.ChaincodeStubInterface, 
 	}
 	t.FSM.SetCurrent(lc.CurrentStep)
 
-	if lc.LcStatus != Accept {
-		return shim.Error("lc status must be Accepted. LCNumber:" + no)
+	if lc.LcStatus != Effective {
+		return shim.Error("lc status must be Effective. LCNumber:" + no)
 	}
 	payment, err := strconv.ParseFloat(args[1], 64)
 	if err != nil {
 		return shim.Error("1st argument must be a numeric string")
 	}
-	if isEqual(payment, lc.AcceptAmount) {
+	//if isEqual(payment, lc.AcceptAmount){
 		//是否已支付为是，状态为付款赎单状态，货运单拥有者为信用证申请企业
 		lc.IsApplicantPaid = true
 		lc.LcStatus = RetireBills
@@ -1534,10 +1612,11 @@ func (t *SimpleChaincode) retireShippingBills(stub shim.ChaincodeStubInterface, 
 			return shim.Error(err.Error())
 		}
 		return shim.Success(nil)
-	} else {
-		return shim.Error("Retire the Documents failed! applicant must pay accept amount:" + strconv.FormatFloat(lc.AcceptAmount, 'f', -1, 64))
-	}
+	// } else {
+	// 	return shim.Error("Retire the Documents failed! applicant must pay accept amount:" + strconv.FormatFloat(lc.AcceptAmount, 'f', -1, 64))
+	// }
 }
+
 /**
 	Role:开证行
 	OP:开证行对申请人的付款申请进行审核受益人提交的单
@@ -1593,6 +1672,7 @@ func (t *SimpleChaincode) reviewRetireBills(stub shim.ChaincodeStubInterface, ar
 	}
 	return shim.Success(nil)
 }
+
 /**
 	Role:开证行
 	OP：信用证闭卷
@@ -1702,6 +1782,7 @@ func (t *SimpleChaincode) saveBCSInfo(stub shim.ChaincodeStubInterface, args []s
 	}
 	return shim.Success([]byte(no))
 }
+
 /**
 	Role:管理员
 	OP：获取银行、企业、签约信息
@@ -1721,6 +1802,7 @@ func (t *SimpleChaincode) getBCSList(stub shim.ChaincodeStubInterface, args []st
 	}
 	return shim.Success(queryResults)
 }
+
 /**
 	Role:管理员
 	OP：获取银行、企业、签约信息
@@ -1740,6 +1822,7 @@ func (t *SimpleChaincode) getBCSByBCSNo(stub shim.ChaincodeStubInterface, args [
 	}
 	return shim.Success(queryResults)
 }
+
 /**
 	Role:管理员
 	OP：获取银行、企业、签约信息

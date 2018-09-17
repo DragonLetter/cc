@@ -36,13 +36,20 @@ const (
 	BeneficiaryReceiveLCStep
 	ApplicantLCAmendStep
 	MultiPartyCountersignStep
-	BeneficiaryHandOverBillsStep
-	AdvisingBankReviewBillsStep
-	IssuingBankAcceptOrRejectStep
+	// BeneficiaryHandOverBillsStep
+	// AdvisingBankReviewBillsStep
+	// IssuingBankAcceptOrRejectStep
 	ApplicantRetireBillsStep
 	IssuingBankReviewRetireBillsStep
 	IssuingBankCloseLCStep
 	LCEnd
+	BeneficiaryHandOverBillsStep // 受益人交单，初始状态
+	IssuingBankCheckBillStep   // 开证行审单
+	ApplicantAcceptOrRejectStep   // 申请人接受或拒绝审单结果
+	IssuingBankAcceptanceStep   // 开证行承兑
+	ApplicantRejectStep    // 申请人拒付，结束状态
+	IssuingBankRejectStep    // 开证行拒付，结束状态
+	HandoverBillSuccStep   // 交单成功，结束状态
 )
 
 var LCStepText  = map[int] string{
@@ -56,13 +63,23 @@ var LCStepText  = map[int] string{
 	BeneficiaryReceiveLCStep : "BeneficiaryReceiveLCStep",
 	ApplicantLCAmendStep : "ApplicantLCAmendStep",
 	MultiPartyCountersignStep : "MultiPartyCountersignStep",
-	BeneficiaryHandOverBillsStep : "BeneficiaryHandOverBillsStep",
-	AdvisingBankReviewBillsStep : "AdvisingBankReviewBillsStep",
-	IssuingBankAcceptOrRejectStep : "IssuingBankAcceptOrRejectStep",
+	// BeneficiaryHandOverBillsStep : "BeneficiaryHandOverBillsStep",
+	// AdvisingBankReviewBillsStep : "AdvisingBankReviewBillsStep",
+	// IssuingBankAcceptOrRejectStep : "IssuingBankAcceptOrRejectStep",
 	ApplicantRetireBillsStep : "ApplicantRetireBillsStep",
 	IssuingBankReviewRetireBillsStep : "IssuingBankReviewRetireBillsStep",
 	IssuingBankCloseLCStep : "IssuingBankCloseLCStep",
 	LCEnd : "LCEnd",
+}
+
+var HandOverBillStep = map[int] string{
+	BeneficiaryHandOverBillsStep : "BeneficiaryHandOverBillsStep",    // 受益人交单，初始状态
+	IssuingBankCheckBillStep : "IssuingBankCheckBillStep",    // 开证行审单
+	ApplicantAcceptOrRejectStep : "ApplicantAcceptOrRejectStep",    // 申请人接受或拒绝审单结果
+	IssuingBankAcceptanceStep : "IssuingBankAcceptanceStep",    // 开证行承兑
+	ApplicantRejectStep : "ApplicantRejectStep",    // 申请人拒付，结束状态
+	IssuingBankRejectStep : "IssuingBankRejectStep",    // 开证行拒付，结束状态
+	HandoverBillSuccStep : "HandoverBillSuccStep",    // 交单成功，结束状态
 }
 
 //操作状态
@@ -107,7 +124,7 @@ type LCLetter struct {
 	//信用证正本
 	LetterOfCredit LetterOfCredit
 	//交单信息
-	LCTransDocsReceive LCTransDocsReceive
+	LCTransDocsReceive []LCTransDocsReceive
 	//保证金
 	LCTransDeposit LCTransDeposit
 	//承兑金额
@@ -311,12 +328,17 @@ type TransProgress struct {
 }
 
 //交单
-type LCTransDocsReceive struct{	
+type LCTransDocsReceive struct{
+	No string
 	ReceivedAmount float64 `json:"ReceivedAmount,string,omitempty"`
 	ReceivedDate time.Time `json:"ReceivedDate,string,omitempty"`
 	BillOfLandings []BillOfLanding
 	//提货单
-	BillOfLadingDocs []Document	
+	BillOfLadingDocs []Document
+	HandOverBillStep string
+	//描述
+	Discrepancy string
+	TransProgressFlow []TransProgress
 }
 
 //货运单
@@ -402,6 +424,8 @@ type AmendForm struct{
 	Status string
 	//发起修改交易进度
 	AmendFormProgressFlow []AmendFormProgress
+	//发起修改的时间
+	AmendDate time.Time `json:"amendDate,string,omitempty"`
 	//详细描述
 	//Details	string
 	
@@ -448,9 +472,13 @@ type Corporation struct {
 	Account string
 	DepositBank string
 	Address string
+	Nation string
+	Contact string
+	Email string
 	PostCode string
 	Telephone string
 	Telefax string
+	CreateTime string
 }
 type LegalEntity struct{
 	No string
