@@ -490,8 +490,8 @@ func (t *SimpleChaincode) saveLCApplication(stub shim.ChaincodeStubInterface, ar
 		}
 
 		//申请人填写申请表时，此时还没有信用证号，执行保存操作
-
-		lc = &LCLetter{no, "", applicationForm, letterOfCredit, lcTransDocsReceive, lcTransDeposit, acceptAmount, nopayAmount, acceptDate, int64(amendTimes), int64(aBTimes), false, isValid, isClose, isCancel, lcStatus, countersign, []string{}, owner, transProgressFlow, "", amendFormFlow, 0}
+		ApplicantPaidAmount := 0.0
+		lc = &LCLetter{no, "", applicationForm, letterOfCredit, lcTransDocsReceive, lcTransDeposit, acceptAmount, nopayAmount, acceptDate, int64(amendTimes), int64(aBTimes), false, ApplicantPaidAmount, isValid, isClose, isCancel, lcStatus, countersign, []string{}, owner, transProgressFlow, "", amendFormFlow, 0}
 
 	} else { // 链上已经存在该LC信息
 		err = json.Unmarshal(lcAsBytes, &lc) //unmarshal it aka JSON.parse()
