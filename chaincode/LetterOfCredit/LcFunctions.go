@@ -1052,7 +1052,7 @@ func (t *SimpleChaincode) appliantCheckBills(stub shim.ChaincodeStubInterface, a
 	var amendFormTransFlow []AmendFormProgress
 
 	amendFormTransProgress := AmendFormProgress{userName, domain, time.Now(), "申请人提交发起修改申请", Approve, AmendStepText[AmendApplicantSubmitStep]}
-	amendForm := AmendForm{lc.AmendNum, amendFormData.AmendTimes, amendFormData.AmendedCurrency, amendFormData.AmendedAmt, amendFormData.AddedDays, amendFormData.AmendExpiryDate, amendFormData.TransPortName, amendFormData.AddedDepositAmt, AmendStepText[AmendIssuingBankAcceptStep], amendFormTransFlow }
+	amendForm := AmendForm{lc.AmendNum, amendFormData.AmendTimes, amendFormData.AmendedCurrency, amendFormData.AmendedAmt, amendFormData.AddedDays, amendFormData.AmendExpiryDate, amendFormData.TransPortName, amendFormData.AddedDepositAmt, AmendStepText[AmendIssuingBankAcceptStep], amendFormTransFlow, time.Now()}
 	amendForm.AmendFormProgressFlow = append(amendForm.AmendFormProgressFlow, amendFormTransProgress)
 
 	lc.AmendFormFlow = append(lc.AmendFormFlow, amendForm)
@@ -1594,7 +1594,7 @@ func (t *SimpleChaincode) retireShippingBills(stub shim.ChaincodeStubInterface, 
 	if err != nil {
 		return shim.Error("1st argument must be a numeric string")
 	}
-	if isEqual(payment, lc.AcceptAmount) {
+	//if isEqual(payment, lc.AcceptAmount){
 		//是否已支付为是，状态为付款赎单状态，货运单拥有者为信用证申请企业
 		lc.IsApplicantPaid = true
 		lc.LcStatus = RetireBills
@@ -1612,9 +1612,9 @@ func (t *SimpleChaincode) retireShippingBills(stub shim.ChaincodeStubInterface, 
 			return shim.Error(err.Error())
 		}
 		return shim.Success(nil)
-	} else {
-		return shim.Error("Retire the Documents failed! applicant must pay accept amount:" + strconv.FormatFloat(lc.AcceptAmount, 'f', -1, 64))
-	}
+	// } else {
+	// 	return shim.Error("Retire the Documents failed! applicant must pay accept amount:" + strconv.FormatFloat(lc.AcceptAmount, 'f', -1, 64))
+	// }
 }
 
 /**

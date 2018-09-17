@@ -424,6 +424,8 @@ type AmendForm struct{
 	Status string
 	//发起修改交易进度
 	AmendFormProgressFlow []AmendFormProgress
+	//发起修改的时间
+	AmendDate time.Time `json:"amendDate,string,omitempty"`
 	//详细描述
 	//Details	string
 	
