@@ -15,13 +15,9 @@ const(
 const (
 	Apply = iota
 	Draft
-	Original
-	OriginalModify
+	OriginalOriginal
 	Effective
-	HandOverBill
-	Accept
 	RetireBills
-	Reject
 	Close
 )
 //步骤
