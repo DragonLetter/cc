@@ -1701,7 +1701,7 @@ func (t *SimpleChaincode) lcClose(stub shim.ChaincodeStubInterface, args []strin
 	if lc.LcStatus != RetireBills {
 		return shim.Error("lc status must be RetirementOfDocuments. LCNumber:" + no)
 	}
-	lc.lcStatus = Close;
+	lc.LcStatus = Close
 	lc.IsClose = true
 	transProgress := &TransProgress{userName, domain, time.Now(), args[1], Approve, lc.CurrentStep}
 	lc.TransProgressFlow = append(lc.TransProgressFlow, *transProgress)

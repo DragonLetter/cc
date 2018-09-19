@@ -15,7 +15,7 @@ const(
 const (
 	Apply = iota
 	Draft
-	OriginalOriginal
+	Original
 	Effective
 	RetireBills
 	Close
