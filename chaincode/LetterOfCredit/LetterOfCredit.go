@@ -22,9 +22,9 @@ const (
 )
 //步骤
 const (
+	// 1.信用证开证流程
 	LCStart = iota
 	ApplicantSaveLCApplyFormStep
-	//ApplicantSubmitLCApplyFormStep
 	BankConfirmApplyFormStep
 	ApplicantFillLCDraftStep
 	BankIssueLCStep
@@ -32,13 +32,11 @@ const (
 	BeneficiaryReceiveLCStep
 	ApplicantLCAmendStep
 	MultiPartyCountersignStep
-	// BeneficiaryHandOverBillsStep
-	// AdvisingBankReviewBillsStep
-	// IssuingBankAcceptOrRejectStep
 	ApplicantRetireBillsStep
 	IssuingBankReviewRetireBillsStep
 	IssuingBankCloseLCStep
 	LCEnd
+	// 2.信用证交单流程
 	BeneficiaryHandOverBillsStep // 受益人交单，初始状态
 	IssuingBankCheckBillStep   // 开证行审单
 	ApplicantAcceptOrRejectStep   // 申请人接受或拒绝审单结果
@@ -48,10 +46,21 @@ const (
 	HandoverBillSuccStep   // 交单成功，结束状态
 )
 
-var LCStepText  = map[int] string{
+// 信用证发起修改步骤
+const (
+	AmendApplicantSubmitStep = iota  //申请人发起修改
+	AmendIssuingBankAcceptStep //开证行同意
+	AmendIssuingBankRejectStep //开证行拒绝
+	AmendAdvisingBankAcceptStep //通知行同意
+	AmendAdvisingBankRejectStep //通知行拒绝
+	AmendBeneficiaryAcceptStep  //受益人同意
+	AmendBeneficiaryRejectStep  //受益人拒绝
+	AmendEnd //结束
+)
+
+var LCStepText = map[int] string{
 	LCStart : "LCStart",
 	ApplicantSaveLCApplyFormStep : "ApplicantSaveLCApplyFormStep",
-	//ApplicantSubmitLCApplyFormStep : "ApplicantSubmitLCApplyFormStep",
 	BankConfirmApplyFormStep : "BankConfirmApplyFormStep",
 	ApplicantFillLCDraftStep : "ApplicantFillLCDraftStep",
 	BankIssueLCStep : "BankIssueLCStep",
@@ -59,9 +68,6 @@ var LCStepText  = map[int] string{
 	BeneficiaryReceiveLCStep : "BeneficiaryReceiveLCStep",
 	ApplicantLCAmendStep : "ApplicantLCAmendStep",
 	MultiPartyCountersignStep : "MultiPartyCountersignStep",
-	// BeneficiaryHandOverBillsStep : "BeneficiaryHandOverBillsStep",
-	// AdvisingBankReviewBillsStep : "AdvisingBankReviewBillsStep",
-	// IssuingBankAcceptOrRejectStep : "IssuingBankAcceptOrRejectStep",
 	ApplicantRetireBillsStep : "ApplicantRetireBillsStep",
 	IssuingBankReviewRetireBillsStep : "IssuingBankReviewRetireBillsStep",
 	IssuingBankCloseLCStep : "IssuingBankCloseLCStep",
@@ -78,26 +84,6 @@ var HandOverBillStep = map[int] string{
 	HandoverBillSuccStep : "HandoverBillSuccStep",    // 交单成功，结束状态
 }
 
-//操作状态
-const (
-	Approve = iota //同意
-	Overrule  //驳回
-	Processing //处理中
-)
-
-//发起修改步骤
-const (
-	// LCStart = iota
-	AmendApplicantSubmitStep = iota  //申请人发起修改
-	AmendIssuingBankAcceptStep //开证行同意
-	AmendIssuingBankRejectStep //开证行拒绝
-	AmendAdvisingBankAcceptStep //通知行同意
-	AmendAdvisingBankRejectStep //通知行拒绝
-	AmendBeneficiaryAcceptStep  //受益人同意
-	AmendBeneficiaryRejectStep  //受益人拒绝
-	AmendEnd //结束
-)
-
 var AmendStepText  = map[int] string{	
 	AmendApplicantSubmitStep : "AmendApplicantSubmitStep",
 	AmendIssuingBankAcceptStep : "AmendIssuingBankAcceptStep",
@@ -109,6 +95,12 @@ var AmendStepText  = map[int] string{
 	AmendEnd : "AmendEnd",	
 }
 
+//操作状态
+const (
+	Approve = iota //同意
+	Overrule  //驳回
+	Processing //处理中
+)
 
 //链上存储的信用证信息
 type LCLetter struct {

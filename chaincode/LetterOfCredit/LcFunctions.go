@@ -381,12 +381,12 @@ func InitFSM(initStatus string) *fsm.FSM {
 			{Name: "advisingBankRejectLCNotice", Src: []string{LCStepText[AdvisingBankReceiveLCNoticeStep]}, Dst: LCStepText[BankIssueLCStep]},
 
 			{Name: "beneficiaryApproveLC", Src: []string{LCStepText[BeneficiaryReceiveLCStep]}, Dst: LCStepText[ApplicantRetireBillsStep]},
-			{Name: "beneficiaryRejectLC", Src: []string{LCStepText[BeneficiaryReceiveLCStep]}, Dst: LCStepText[ApplicantLCAmendStep]},
+			{Name: "beneficiaryRejectLC", Src: []string{LCStepText[BeneficiaryReceiveLCStep]}, Dst: LCStepText[AdvisingBankReceiveLCNoticeStep]},
 
-			{Name: "applicantSubmitLCAmend", Src: []string{LCStepText[ApplicantLCAmendStep]}, Dst: LCStepText[MultiPartyCountersignStep]},
+			// {Name: "applicantSubmitLCAmend", Src: []string{LCStepText[ApplicantLCAmendStep]}, Dst: LCStepText[MultiPartyCountersignStep]},
 
-			{Name: "MultiPartyCountersignApprove", Src: []string{LCStepText[MultiPartyCountersignStep]}, Dst: LCStepText[BeneficiaryReceiveLCStep]},
-			{Name: "MultiPartyCountersignReject", Src: []string{LCStepText[MultiPartyCountersignStep]}, Dst: LCStepText[ApplicantLCAmendStep]},
+			// {Name: "MultiPartyCountersignApprove", Src: []string{LCStepText[MultiPartyCountersignStep]}, Dst: LCStepText[BeneficiaryReceiveLCStep]},
+			// {Name: "MultiPartyCountersignReject", Src: []string{LCStepText[MultiPartyCountersignStep]}, Dst: LCStepText[ApplicantLCAmendStep]},
 
 			// {Name: "beneficiaryHandOverBills", Src: []string{LCStepText[BeneficiaryHandOverBillsStep]}, Dst: LCStepText[AdvisingBankReviewBillsStep]},
 
