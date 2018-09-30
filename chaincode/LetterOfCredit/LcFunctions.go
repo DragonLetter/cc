@@ -74,8 +74,6 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.getLcListByLetterOfCreditNo(stub, args)
 	} else if function == "getLcListByLetterOfCreditLCNo" { //find Lcs for letter of credit LCNo using rich query
 		return t.getLcListByLetterOfCreditLCNo(stub, args)
-	} else if function == "saveLCApplication" {
-		return t.saveLCApplication(stub, args)
 	} else if function == "submitLCApplication" {
 		return t.submitLCApplication(stub, args)
 	} else if function == "bankConfirmApplication" {
@@ -365,12 +363,12 @@ func InitFSM(initStatus string) *fsm.FSM {
 	f := fsm.NewFSM(
 		initStatus,
 		fsm.Events{
-			{Name: "applicantSaveLCApplication", Src: []string{LCStepText[LCStart]}, Dst: LCStepText[ApplicantSaveLCApplyFormStep]},
+			{Name: "applicantSubmitLCApplication", Src: []string{LCStepText[LCStart]}, Dst: LCStepText[BankConfirmApplyFormStep]},
 
-			{Name: "applicantSubmitLCApplication", Src: []string{LCStepText[ApplicantSaveLCApplyFormStep]}, Dst: LCStepText[BankConfirmApplyFormStep]},
+			// {Name: "applicantSubmitLCApplication", Src: []string{LCStepText[ApplicantSaveLCApplyFormStep]}, Dst: LCStepText[BankConfirmApplyFormStep]},
 
 			{Name: "issuingBankApproveApplicantSubmitLCApplication", Src: []string{LCStepText[BankConfirmApplyFormStep]}, Dst: LCStepText[ApplicantFillLCDraftStep]},
-			{Name: "issuingBankRejectApplicantSubmitLCApplication", Src: []string{LCStepText[BankConfirmApplyFormStep]}, Dst: LCStepText[ApplicantSaveLCApplyFormStep]},
+			{Name: "issuingBankRejectApplicantSubmitLCApplication", Src: []string{LCStepText[BankConfirmApplyFormStep]}, Dst: LCStepText[LCStart]},
 
 			{Name: "applicantSubmitLCDraft", Src: []string{LCStepText[ApplicantFillLCDraftStep]}, Dst: LCStepText[BankIssueLCStep]},
 
@@ -418,7 +416,7 @@ func InitFSM(initStatus string) *fsm.FSM {
 	Description:发起申请,签名.核实信息、保存申请材料。
 	Return：申请状态
  */
-func (t *SimpleChaincode) saveLCApplication(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (t *SimpleChaincode) submitLCApplication(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	if len(args) != 2 {
 		return shim.Error("Incorrect number of arguments. Expecting 2")
 	}
@@ -503,7 +501,7 @@ func (t *SimpleChaincode) saveLCApplication(stub shim.ChaincodeStubInterface, ar
 	}
 	t.FSM.SetCurrent("LCStart")
 
-	err = t.FSM.Event("applicantSaveLCApplication") //触发状态机的事件
+	err = t.FSM.Event("applicantSubmitLCApplication") //触发状态机的事件
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -521,51 +519,6 @@ func (t *SimpleChaincode) saveLCApplication(stub shim.ChaincodeStubInterface, ar
 		return shim.Error(fmt.Sprintf("Failed to create asset: %s, error: %s", args[0], err.Error()))
 	}
 	return shim.Success([]byte(no))
-}
-
-/**
-	Role：申请人
-	OP:提交信用证申请
-	Status：正本
-	Description：申请人提交信用证申请
-	Return:申请状态
- */
-func (t *SimpleChaincode) submitLCApplication(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-
-	if len(args) != 1 {
-		return shim.Error("Incorrect number of arguments. Expecting 1. no")
-	}
-	no := args[0]
-	lcBytes, err := stub.GetState(no)
-	if err != nil {
-		return shim.Error("query Letter of Credit fail. Number:" + no)
-	}
-	lc := LCLetter{}
-	err = json.Unmarshal(lcBytes, &lc) //unmarshal it aka JSON.parse()
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	_, userName, domain := identity(stub)
-	if !strings.EqualFold(lc.ApplicationForm.Applicant.Domain, domain) {
-		return shim.Error("Current operator domain:" + domain + " is not lc apply corporation domain:" + lc.ApplicationForm.Applicant.Domain)
-	}
-	t.FSM.SetCurrent(lc.CurrentStep)
-
-	transProgress := TransProgress{userName, domain, time.Now(), "申请人提交信用证申请", Approve, lc.CurrentStep}
-	lc.TransProgressFlow = append(lc.TransProgressFlow, transProgress)
-	err = t.FSM.Event("applicantSubmitLCApplication") //触发状态机的事件
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	lc.LcStatus = Apply
-	lc.CurrentStep = t.FSM.Current()
-
-	jsonB, _ := json.Marshal(lc)
-	err = stub.PutState(no, jsonB) //rewrite the lc
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	return shim.Success(nil)
 }
 
 /**
