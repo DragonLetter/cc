@@ -365,10 +365,8 @@ func InitFSM(initStatus string) *fsm.FSM {
 		fsm.Events{
 			{Name: "applicantSubmitLCApplication", Src: []string{LCStepText[LCStart]}, Dst: LCStepText[BankConfirmApplyFormStep]},
 
-			// {Name: "applicantSubmitLCApplication", Src: []string{LCStepText[ApplicantSaveLCApplyFormStep]}, Dst: LCStepText[BankConfirmApplyFormStep]},
-
 			{Name: "issuingBankApproveApplicantSubmitLCApplication", Src: []string{LCStepText[BankConfirmApplyFormStep]}, Dst: LCStepText[ApplicantFillLCDraftStep]},
-			{Name: "issuingBankRejectApplicantSubmitLCApplication", Src: []string{LCStepText[BankConfirmApplyFormStep]}, Dst: LCStepText[LCStart]},
+			{Name: "issuingBankRejectApplicantSubmitLCApplication", Src: []string{LCStepText[BankConfirmApplyFormStep]}, Dst: LCStepText[LCEnd]},
 
 			{Name: "applicantSubmitLCDraft", Src: []string{LCStepText[ApplicantFillLCDraftStep]}, Dst: LCStepText[BankIssueLCStep]},
 
@@ -381,26 +379,12 @@ func InitFSM(initStatus string) *fsm.FSM {
 			{Name: "beneficiaryApproveLC", Src: []string{LCStepText[BeneficiaryReceiveLCStep]}, Dst: LCStepText[ApplicantRetireBillsStep]},
 			{Name: "beneficiaryRejectLC", Src: []string{LCStepText[BeneficiaryReceiveLCStep]}, Dst: LCStepText[AdvisingBankReceiveLCNoticeStep]},
 
-			// {Name: "applicantSubmitLCAmend", Src: []string{LCStepText[ApplicantLCAmendStep]}, Dst: LCStepText[MultiPartyCountersignStep]},
-
-			// {Name: "MultiPartyCountersignApprove", Src: []string{LCStepText[MultiPartyCountersignStep]}, Dst: LCStepText[BeneficiaryReceiveLCStep]},
-			// {Name: "MultiPartyCountersignReject", Src: []string{LCStepText[MultiPartyCountersignStep]}, Dst: LCStepText[ApplicantLCAmendStep]},
-
-			// {Name: "beneficiaryHandOverBills", Src: []string{LCStepText[BeneficiaryHandOverBillsStep]}, Dst: LCStepText[AdvisingBankReviewBillsStep]},
-
-			// {Name: "advisingBankApproveBills", Src: []string{LCStepText[AdvisingBankReviewBillsStep]}, Dst: LCStepText[IssuingBankAcceptOrRejectStep]},
-			// {Name: "advisingBankRejectBills", Src: []string{LCStepText[AdvisingBankReviewBillsStep]}, Dst: LCStepText[BeneficiaryHandOverBillsStep]},
-
-			// {Name: "issuingBankAccept", Src: []string{LCStepText[IssuingBankAcceptOrRejectStep]}, Dst: LCStepText[ApplicantRetireBillsStep]},
-			// {Name: "issuingBankReject", Src: []string{LCStepText[IssuingBankAcceptOrRejectStep]}, Dst: LCStepText[AdvisingBankReviewBillsStep]},
-
 			{Name: "applicantRetireBills", Src: []string{LCStepText[ApplicantRetireBillsStep]}, Dst: LCStepText[IssuingBankReviewRetireBillsStep]},
 
 			{Name: "issuingBankApproveRetireBills", Src: []string{LCStepText[IssuingBankReviewRetireBillsStep]}, Dst: LCStepText[IssuingBankCloseLCStep]},
 			{Name: "issuingBankRejectRetireBills", Src: []string{LCStepText[IssuingBankReviewRetireBillsStep]}, Dst: LCStepText[ApplicantRetireBillsStep]},
 
 			{Name: "issuingBankCloseLC", Src: []string{LCStepText[IssuingBankCloseLCStep]}, Dst: LCStepText[LCEnd]},
-
 		},
 		fsm.Callbacks{
 			//"enter_state": func(e *fsm.Event) { lc.enterState(e) },
@@ -476,9 +460,6 @@ func (t *SimpleChaincode) submitLCApplication(stub shim.ChaincodeStubInterface, 
 		}
 		//交单内容在填申请时为空
 		var lcTransDocsReceive []LCTransDocsReceive
-//		lCTransDocsReceive, err:= decodeLCTransDocsReceive("{\"ReceivedAmount\":\"0.0\"}")
-		//货运单内容在填申请时为空
-		//billOfLanding, err := decodeBillOfLanding("{\"GoodsNo\":\"\",\"GoodsDesc\":\"\",\"LoadPortName\":\"\",\"TransPortName\":\"\",\"LatestShipDate\":\"\",\"PartialShipment\":\"false\",\"TrackingNo\":\"\",\"Carrier\":{\"No\":\"\",\"Name\":\"\",\"Domain\":\"\"},\"ShippingTime\":\"\",\"Owner\":{\"NO\":\"\",\"Name\":\"\",\"Domain\":\"\"}}")
 		if err != nil {
 			return shim.Error(err.Error())
 		}
@@ -584,7 +565,6 @@ func (t *SimpleChaincode) bankConfirmApplication(stub shim.ChaincodeStubInterfac
 
 	lc.TransProgressFlow = append(lc.TransProgressFlow, *transProgress)
 	lc.LcStatus = status
-	//lc.LCNo = lcNo
 	lc.CurrentStep = t.FSM.Current()
 	jsonB, _ := json.Marshal(lc)
 	err = stub.PutState(no, jsonB) //rewrite the lc
