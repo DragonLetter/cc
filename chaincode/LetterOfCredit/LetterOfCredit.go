@@ -1,7 +1,6 @@
 ﻿package main
 
 import (
-	"time"
 )
 
 //角色
@@ -120,7 +119,7 @@ type LCLetter struct {
 	//未付金额
 	NotPayAmount float64
 	//承兑日期
-	AcceptDate time.Time `json:"acceptDate,string,omitempty"`
+	AcceptDate string `json:"acceptDate"`
 	//改证次数
 	AmendTimes int64
 	//到单次数
@@ -165,7 +164,7 @@ type ApplicationForm struct {
 	//通知行
 	AdvisingBank Bank
 	//到期日
-	ExpiryDate time.Time `json:"expiryDate,string,omitempty"`
+	ExpiryDate string `json:"expiryDate"`
 	//到期地点
 	ExpiryPlace string
 	//是否即期
@@ -193,7 +192,7 @@ type ApplicationForm struct {
 	//溢装
 	Overfill float64 `json:"Overfill,string,omitempty"`
 	//申请时间
-	ApplyTime time.Time `json:"applyTime,string,omitempty"`
+	ApplyTime string `json:"applyTime"`
 	//在开证行产生的费用由谁承担：1买方、2卖方
 	ChargeInIssueBank int64 `json:"chargeInIssueBank,string,omitempty"`
 	//在开证行外产生的费用由谁承担：1买方、2卖方
@@ -226,9 +225,9 @@ type LetterOfCredit struct {
 	//通知行
 	AdvisingBank Bank
 	//开立日期
-	IssuingDate time.Time `json:"issuingDate,string,omitempty"`
+	IssuingDate string `json:"issuingDate"`
 	//到期日
-	ExpiryDate time.Time `json:"expiryDate,string,omitempty"`
+	ExpiryDate string `json:"expiryDate"`
 	//到期地点
 	ExpiryPlace string
 	//是否即期
@@ -256,7 +255,7 @@ type LetterOfCredit struct {
 	//溢装
 	Overfill float64 `json:"Overfill,string,omitempty"`
 	//申请时间
-	ApplyTime time.Time `json:"applyTime,string,omitempty"`
+	ApplyTime string `json:"applyTime"`
 	//在开证行产生的费用由谁承担：1买方、2卖方
 	ChargeInIssueBank int64 `json:"chargeInIssueBank,string,omitempty"`
 	//在开证行外产生的费用由谁承担：1买方、2卖方
@@ -311,7 +310,7 @@ type Transaction struct {
 type TransProgress struct {
 	Name string
 	Role string
-	Time	time.Time `json:"time,string,omitempty"`
+	Time	string `json:"time"`
 	Description	string
 	Operation int `json:"operation,string,omitempty"`
 	Status	string
@@ -322,7 +321,7 @@ type LCTransDocsReceive struct{
 	No string
 	HandoverAmount float64 `json:"HandoverAmount,string,omitempty"`
 	ReceivedAmount float64 `json:"ReceivedAmount,string,omitempty"`
-	ReceivedDate time.Time `json:"ReceivedDate,string,omitempty"`
+	ReceivedDate string `json:"ReceivedDate"`
 	BillOfLandings []BillOfLanding
 	//提货单
 	BillOfLadingDocs []Document
@@ -367,7 +366,7 @@ type GoodsInfo struct{
 	//允许转船装运
 	AllowTransShipment int64 `json:"allowTransShipment,string,omitempty"`
 	//最迟装运日期
-	LatestShipmentDate time.Time `json:"latestShipmentDate,string,omitempty"`
+	LatestShipmentDate string `json:"latestShipmentDate"`
 	//装运方式
 	ShippingWay string
 	//装运地点
@@ -404,9 +403,9 @@ type AmendForm struct{
 	//期限增减
 	AddedDays int64 `json:"addedDays,string"`
 	//改证后有效日期
-	AmendExpiryDate time.Time `json:"AmendExpiryDate,string,omitempty"`
+	AmendExpiryDate string `json:"AmendExpiryDate"`
 	//改证日期
-	//LCAmendDate time.Time
+	//LCAmendDate string
 	//货物发送最终目的地
 	TransPortName string
 	//保证金增减金额
@@ -416,7 +415,7 @@ type AmendForm struct{
 	//发起修改交易进度
 	AmendFormProgressFlow []AmendFormProgress
 	//发起修改的时间
-	AmendDate time.Time `json:"amendDate,string,omitempty"`
+	AmendDate string `json:"amendDate"`
 	//详细描述
 	//Details	string
 	
@@ -426,7 +425,7 @@ type AmendForm struct{
 type AmendFormProgress struct {
 	Name string
 	Role string
-	Time	time.Time `json:"time,string,omitempty"`
+	Time	string `json:"time"`
 	Description	string
 	Operation int `json:"operation,string,omitempty"`
 	Status	string
