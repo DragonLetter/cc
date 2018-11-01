@@ -118,6 +118,8 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.advisingLetterOfAmend(stub, args)
 	} else if function == "beneficiaryLetterOfAmend" {
 		return t.beneficiaryLetterOfAmend(stub, args)
+	} else if function == "updateLetterOfFace" {
+		return t.updateLetterOfFace(stub, args)
 	}
 
 	fmt.Println("invoke did not find func: " + function) //error
@@ -474,7 +476,7 @@ func (t *SimpleChaincode) submitLCApplication(stub shim.ChaincodeStubInterface, 
 
 		//申请人填写申请表时，此时还没有信用证号，执行保存操作
 		ApplicantPaidAmount := 0.0
-		lc = &LCLetter{no, "", applicationForm, letterOfCredit, lcTransDocsReceive, lcTransDeposit, acceptAmount, nopayAmount, acceptDate, int64(amendTimes), int64(aBTimes), false, ApplicantPaidAmount, isValid, isClose, isCancel, lcStatus, countersign, []string{}, owner, transProgressFlow, "", amendFormFlow, 0}
+		lc = &LCLetter{no, "", applicationForm, letterOfCredit, lcTransDocsReceive, lcTransDeposit, acceptAmount, nopayAmount, acceptDate, int64(amendTimes), int64(aBTimes), false, ApplicantPaidAmount, isValid, isClose, isCancel, lcStatus, countersign, []string{}, owner, transProgressFlow, "", amendFormFlow, 0,""}
 
 	} else { // 链上已经存在该LC信息
 		err = json.Unmarshal(lcAsBytes, &lc) //unmarshal it aka JSON.parse()
@@ -1777,4 +1779,46 @@ func (t *SimpleChaincode) getBCSsByBCID(stub shim.ChaincodeStubInterface, args [
 		return shim.Error(err.Error())
 	}
 	return shim.Success(queryResults)
+}
+
+func (t *SimpleChaincode) updateLetterOfFace(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	if len(args) != 3 {
+		return shim.Error("Incorrect number of arguments. Expecting 1")
+	}
+	no := args[0]
+	bno := args[1]
+	url := args[2]
+	lc := &LCLetter{}
+	bnoInt, err := strconv.ParseInt(bno, 10, 8)
+	lcAsBytes, err := stub.GetState(no)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	// 链上已经存在该LC信息
+	err = json.Unmarshal(lcAsBytes, &lc) //unmarshal it aka JSON.parse()
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	if bnoInt >= 0 {
+		// 设置交单状态变化，记录在交单子结构中
+		for i := 0; i < len(lc.LCTransDocsReceive); i++ {
+			if lc.LCTransDocsReceive[i].No == bno {
+				lc.LCTransDocsReceive[i].UrlAccepte = url
+        	    break
+			}
+		}
+	}else{
+		lc.UrlFletter = url
+	}
+	//=== Marshal LC ===
+	lcJSONasBytes, err := json.Marshal(lc)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	// === Save LC to state ===
+	err = stub.PutState(no, lcJSONasBytes)
+	if err != nil {
+		return shim.Error(fmt.Sprintf("Failed to create asset: %s", args[0]))
+	}
+	return shim.Success(nil)
 }

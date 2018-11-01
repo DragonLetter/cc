@@ -150,6 +150,8 @@ type LCLetter struct {
 	AmendFormFlow []AmendForm	
 	//发起修改当前编号（申请人可以多次发起修改，所以需要存储发起修改的当前编号）
 	AmendNum int
+	//信用证的面函地址
+	UrlFletter string
 }
 
 //信用证申请表
@@ -328,6 +330,8 @@ type LCTransDocsReceive struct{
 	HandOverBillStep string
 	//描述
 	Discrepancy string
+	//交单承兑面函
+	UrlAccepte string
 	TransProgressFlow []TransProgress
 }
 
